@@ -1,0 +1,16 @@
+node_modules/
+backend/node_modules/
+backend/dist/
+dist/
+build/
+tmp/
+*.log
+.env
+.env.*
+.DS_Store
+coverage/
+*.sqlite
+*.cache/
+.cursorindexingignore
+.specstory/
+

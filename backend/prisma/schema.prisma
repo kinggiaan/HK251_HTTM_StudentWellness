@@ -1,0 +1,281 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum UserRole {
+  consultant
+  teacher_supervisor
+  data_scientist
+  admin
+}
+
+enum StudentStatus {
+  active
+  inactive
+  graduated
+}
+
+enum RiskLevel {
+  low
+  medium
+  high
+  critical
+}
+
+enum AssessmentType {
+  self
+  consultant
+  automated
+}
+
+enum SessionType {
+  individual
+  group
+  emergency
+}
+
+enum SessionStatus {
+  scheduled
+  completed
+  cancelled
+  no_show
+}
+
+enum NotificationType {
+  alert
+  info
+  warning
+  success
+}
+
+enum NotificationCategory {
+  student_risk
+  session_reminder
+  system
+  model
+  trend
+}
+
+enum NotificationPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum ModelType {
+  classification
+  regression
+  clustering
+}
+
+enum ModelStatus {
+  training
+  trained
+  deployed
+  archived
+}
+
+model User {
+  id         String     @id @default(uuid())
+  email      String     @unique
+  password   String
+  role       UserRole
+  fullName   String
+  avatarUrl  String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  lastLogin  DateTime?
+  students   Student[]  @relation("ConsultantStudents")
+  sessions   CounselingSession[] @relation("ConsultantSessions")
+  notifications Notification[]
+  mlModels   MLModel[]  @relation("ModelTrainedBy")
+  datasets   Dataset[]  @relation("DatasetUploadedBy")
+  refreshTokens RefreshToken[]
+  auditLogs  AuditLog[]
+}
+
+model Student {
+  id             String              @id @default(uuid())
+  studentId      String              @unique
+  name           String
+  email          String              @unique
+  phone          String?
+  department     String?
+  year           Int?
+  avatarUrl      String?
+  stressLevel    Int?                @db.SmallInt
+  sleepHours     Decimal?            @db.Decimal(4, 2)
+  riskScore      Int?                @db.SmallInt
+  riskLevel      RiskLevel?
+  status         StudentStatus       @default(active)
+  consultantId   String?
+  consultant     User?               @relation("ConsultantStudents", fields: [consultantId], references: [id])
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  lastAssessment DateTime?
+  records        MentalHealthRecord[]
+  sessions       CounselingSession[]
+  notifications  Notification[]      @relation("NotificationStudent")
+
+  @@index([consultantId], map: "idx_students_consultant")
+  @@index([riskLevel], map: "idx_students_risk_level")
+  @@index([status], map: "idx_students_status")
+}
+
+model MentalHealthRecord {
+  id              String         @id @default(uuid())
+  studentId       String
+  student         Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  stressLevel     Int            @db.SmallInt
+  anxietyLevel    Int            @db.SmallInt
+  depressionLevel Int            @db.SmallInt
+  sleepHours      Decimal        @db.Decimal(4, 2)
+  sleepQuality    Int            @db.SmallInt
+  riskScore       Int            @db.SmallInt
+  riskLevel       RiskLevel
+  assessmentDate  DateTime
+  assessmentType  AssessmentType
+  notes           String?
+  predictedRisk   Int?
+  modelVersion    String?
+  createdAt       DateTime        @default(now())
+
+  @@index([studentId], map: "idx_health_records_student")
+  @@index([assessmentDate], map: "idx_health_records_date")
+}
+
+model CounselingSession {
+  id                 String         @id @default(uuid())
+  studentId          String
+  student            Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  consultantId       String
+  consultant         User           @relation("ConsultantSessions", fields: [consultantId], references: [id])
+  sessionDate        DateTime
+  duration           Int?
+  sessionType        SessionType
+  status             SessionStatus  @default(scheduled)
+  topic              String?
+  notes              String?
+  followUpRequired   Boolean        @default(false)
+  followUpDate       DateTime?
+  preSessionStress   Int?
+  postSessionStress  Int?
+  sessionOutcome     String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  notifications      Notification[] @relation("NotificationSession")
+
+  @@index([studentId], map: "idx_sessions_student")
+  @@index([consultantId], map: "idx_sessions_consultant")
+  @@index([sessionDate], map: "idx_sessions_date")
+}
+
+model Notification {
+  id                String                @id @default(uuid())
+  userId            String
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              NotificationType
+  category          NotificationCategory
+  title             String
+  message           String
+  priority          NotificationPriority
+  relatedStudentId  String?
+  relatedStudent    Student?              @relation("NotificationStudent", fields: [relatedStudentId], references: [id])
+  relatedSessionId  String?
+  relatedSession    CounselingSession?    @relation("NotificationSession", fields: [relatedSessionId], references: [id])
+  read              Boolean               @default(false)
+  dismissed         Boolean               @default(false)
+  createdAt         DateTime              @default(now())
+  readAt            DateTime?
+
+  @@index([userId], map: "idx_notifications_user")
+  @@index([read], map: "idx_notifications_read")
+}
+
+model MLModel {
+  id                String        @id @default(uuid())
+  modelName         String
+  modelType         ModelType
+  version           String
+  algorithm         String
+  hyperparameters   Json?
+  features          Json?
+  targetVariable    String?
+  accuracy          Decimal?      @db.Decimal(5, 4)
+  precision         Decimal?      @db.Decimal(5, 4)
+  recall            Decimal?      @db.Decimal(5, 4)
+  f1Score           Decimal?      @db.Decimal(5, 4)
+  trainingDatasetId String?
+  trainingDataset   Dataset?      @relation(fields: [trainingDatasetId], references: [id])
+  trainingSamples   Int?
+  testingSamples    Int?
+  status            ModelStatus
+  isActive          Boolean       @default(false)
+  trainedById       String?
+  trainedBy         User?         @relation("ModelTrainedBy", fields: [trainedById], references: [id])
+  trainedAt         DateTime?
+  deployedAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+model Dataset {
+  id              String    @id @default(uuid())
+  name            String
+  description     String?
+  fileUrl         String
+  fileName        String
+  fileSize        BigInt?
+  format          String
+  totalSamples    Int?
+  features        Json?
+  targetVariable  String?
+  completeness    Decimal?  @db.Decimal(5, 2)
+  missingValues   Decimal?  @db.Decimal(5, 2)
+  dataBalance     Decimal?  @db.Decimal(5, 2)
+  trainingSplit   Decimal?  @db.Decimal(5, 2)
+  testingSplit    Decimal?  @db.Decimal(5, 2)
+  uploadedById    String?
+  uploadedBy      User?     @relation("DatasetUploadedBy", fields: [uploadedById], references: [id])
+  uploadedAt      DateTime  @default(now())
+  lastUsedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  models          MLModel[]
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  token       String   @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  revoked     Boolean  @default(false)
+  revokedAt   DateTime?
+  replacedBy  String?
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  resource  String?
+  metadata  Json?
+  ip        String?
+  userAgent String?
+  success   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
