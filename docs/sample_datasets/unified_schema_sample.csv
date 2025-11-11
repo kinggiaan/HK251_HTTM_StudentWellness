@@ -1,0 +1,7 @@
+Age,Course,Gender,CGPA,Stress_Level,Depression_Score,Anxiety_Score,Sleep_Quality,Physical_Activity,Diet_Quality,Social_Support,Relationship_Status,Substance_Use,Counseling_Service_Use,Family_History,Chronic_Illness,Financial_Stress,Extracurricular_Involvement,Semester_Credit_Load,Residence_Type
+20,Computer Science,M,3.2,7,6,6,4,3,3,2,Single,Never,No,No,No,3,Yes,15,Dorm
+21,Psychology,F,3.6,4,4,5,5,2,4,3,In Relationship,Rarely,No,Yes,No,2,Yes,16,Apartment
+22,Engineering,M,2.9,8,7,7,3,2,2,2,Single,Occasionally,No,No,Yes,4,No,18,Home
+19,Mathematics,F,3.8,3,2,3,5,3,4,4,Single,Never,No,No,No,1,Yes,14,Dorm
+23,Biology,F,3.1,6,5,5,4,2,3,3,In Relationship,Occasionally,Yes,No,No,3,No,17,Apartment
+
