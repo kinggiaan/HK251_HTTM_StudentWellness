@@ -1,10 +1,11 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { MentalHealthRecord } from "../data/mockMentalHealth";
 import { consultantNotifications } from "../data/mockNotificationsByRole";
 import { NotificationPanel } from "./NotificationPanel";
 import { useStudents } from "../hooks/useStudents";
 import { transformStudentsToMentalHealthRecords } from "../utils/dataTransform";
 import { useAuth } from "../contexts/AuthContext";
+import { usePermissions } from "../contexts/PermissionsContext";
 import svgPaths from "../imports/svg-695504e5jy";
 import img from "figma:asset/b84a227f158a096d5fb31a5a5f2dd6c595e78767.png";
 import { imgGroup } from "../imports/svg-tct91";
@@ -153,6 +154,7 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [notifications, setNotifications] = useState(consultantNotifications);
+  const { hasPermission } = usePermissions();
 
   // Fetch students with health data
   const { students, isLoading: isLoadingStudents } = useStudents({
@@ -231,9 +233,12 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
             </div>
 
             <div className="flex items-center gap-[16px]">
-              <button className="font-['Poppins:Medium',sans-serif] text-[#2f80ed] text-[11.507px] hover:opacity-80 transition-opacity">
-                Export Data
-              </button>
+              {hasPermission("students.export") && (
+                <button className="font-['Poppins:Medium',sans-serif] text-[#2f80ed] text-[11.507px] hover:opacity-80 transition-opacity">
+                  Export Data
+                </button>
+              )
+              }
               
               <div className="bg-[#f5f6f8] flex gap-[9.863px] items-center px-[13.151px] py-[6px] rounded-[4.932px] w-[300px]">
                 <input

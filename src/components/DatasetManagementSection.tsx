@@ -1,8 +1,46 @@
-import { extendedMockStudents } from "../data/mockStudentsExtended";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { listDatasets, uploadDataset } from "../services/datasets";
+import { toast } from "sonner";
 import correlationMatrix from "figma:asset/9cd4c173c374f15abc2fa955af96ccd62c5e6093.png";
 
 export function DatasetManagement() {
-  const totalStudents = extendedMockStudents.length;
+  const [totalSamples, setTotalSamples] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function reload() {
+    try {
+      const res = await listDatasets({ page: 1, limit: 1 });
+      const latest = res.items?.[0];
+      setTotalSamples(latest?.totalSamples ?? 0);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to load datasets");
+    }
+  }
+
+  useEffect(() => {
+    reload();
+  }, []);
+
+  function onClickUpload() {
+    fileInputRef.current?.click();
+  }
+
+  async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploading(true);
+      await uploadDataset(file, file.name);
+      toast.success("Dataset uploaded");
+      await reload();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Upload failed");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
   return (
     <div className="absolute bg-white rounded-[8px] p-[24px] top-[1140px] left-[calc(16.667%+83.978px)] w-[1149px] border border-[#e5e5e5]">
@@ -19,12 +57,13 @@ export function DatasetManagement() {
           </div>
 
           <div className="flex items-center gap-[12px]">
-            <button className="bg-[#4c85e9] text-white px-[16px] py-[8px] rounded-[6px] font-['Poppins:Medium',sans-serif] text-[12px] hover:bg-[#4c85e9]/90 transition-colors flex items-center gap-[8px]">
+            <input ref={fileInputRef} type="file" accept=".csv,application/json,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={onFileSelected} />
+            <button onClick={onClickUpload} disabled={isUploading} className="bg-[#4c85e9] text-white px-[16px] py-[8px] rounded-[6px] font-['Poppins:Medium',sans-serif] text-[12px] hover:bg-[#4c85e9]/90 transition-colors flex items-center gap-[8px] disabled:opacity-60">
               <svg className="size-[14px]" fill="none" viewBox="0 0 20 20">
                 <path d="M17.5 7.5V12.5C17.5 16.6667 16.25 17.9167 12.0833 17.9167H7.91667C3.75 17.9167 2.5 16.6667 2.5 12.5V7.5C2.5 3.33333 3.75 2.08333 7.91667 2.08333H12.0833C16.25 2.08333 17.5 3.33333 17.5 7.5Z" fill="white"/>
                 <path d="M12.0833 11.6667H10.8333V12.9167C10.8333 13.375 10.4583 13.75 10 13.75C9.54167 13.75 9.16667 13.375 9.16667 12.9167V11.6667H7.91667C7.45833 11.6667 7.08333 11.2917 7.08333 10.8333C7.08333 10.375 7.45833 10 7.91667 10H9.16667V8.75C9.16667 8.29167 9.54167 7.91667 10 7.91667C10.4583 7.91667 10.8333 8.29167 10.8333 8.75V10H12.0833C12.5417 10 12.9167 10.375 12.9167 10.8333C12.9167 11.2917 12.5417 11.6667 12.0833 11.6667Z" fill="white"/>
               </svg>
-              Upload Dataset
+              {isUploading ? "Uploading..." : "Upload Dataset"}
             </button>
             <button className="bg-[#27ae60] text-white px-[16px] py-[8px] rounded-[6px] font-['Poppins:Medium',sans-serif] text-[12px] hover:bg-[#27ae60]/90 transition-colors">
               Export Data
@@ -44,7 +83,7 @@ export function DatasetManagement() {
               </div>
               <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">Total Samples</p>
             </div>
-            <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[28px]">{totalStudents}</p>
+            <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[28px]">{totalSamples}</p>
             <p className="font-['Poppins:Regular',sans-serif] text-[#27ae60] text-[10px] mt-[4px]">+12 this week</p>
           </div>
 
@@ -58,7 +97,7 @@ export function DatasetManagement() {
               </div>
               <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">Training Set</p>
             </div>
-            <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[28px]">{Math.floor(totalStudents * 0.8)}</p>
+            <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[28px]">{Math.floor(totalSamples * 0.8)}</p>
             <p className="font-['Poppins:Regular',sans-serif] text-[#495d72] text-[10px] mt-[4px]">80% of total</p>
           </div>
 
@@ -73,7 +112,7 @@ export function DatasetManagement() {
               </div>
               <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">Testing Set</p>
             </div>
-            <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[28px]">{Math.floor(totalStudents * 0.2)}</p>
+            <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[28px]">{Math.floor(totalSamples * 0.2)}</p>
             <p className="font-['Poppins:Regular',sans-serif] text-[#495d72] text-[10px] mt-[4px]">20% of total</p>
           </div>
 
@@ -113,13 +152,13 @@ export function DatasetManagement() {
             <div className="flex items-center gap-[8px]">
               <div className="size-[12px] rounded-[2px] bg-[#27ae60]"></div>
               <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">
-                Training: {Math.floor(totalStudents * 0.8)} samples
+                Training: {Math.floor(totalSamples * 0.8)} samples
               </p>
             </div>
             <div className="flex items-center gap-[8px]">
               <div className="size-[12px] rounded-[2px] bg-[#f2994a]"></div>
               <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">
-                Testing: {Math.floor(totalStudents * 0.2)} samples
+                Testing: {Math.floor(totalSamples * 0.2)} samples
               </p>
             </div>
           </div>

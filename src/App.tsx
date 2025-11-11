@@ -1,9 +1,12 @@
+import React from "react";
 import { useAuth } from "./contexts/AuthContext";
 import { LoginPage } from "./components/LoginPage";
 import { ConsultantDashboard } from "./components/ConsultantDashboard";
 import { TeacherSupervisorDashboard } from "./components/TeacherSupervisorDashboard";
 import { DataScientistDashboard } from "./components/DataScientistDashboard";
+import { AdminConsole } from "./components/AdminConsole";
 import { Toaster } from "./components/ui/sonner";
+import { PermissionsProvider } from "./contexts/PermissionsContext";
 
 export default function App() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -31,42 +34,52 @@ export default function App() {
   }
 
   // Map backend roles to frontend role types
-  const roleMap: Record<string, "consultant" | "teacher" | "dataScientist"> = {
+  const roleMap: Record<string, "consultant" | "teacher" | "dataScientist" | "admin"> = {
     consultant: "consultant",
     teacher_supervisor: "teacher",
     data_scientist: "dataScientist",
-    admin: "consultant" // Admin can access consultant dashboard
+    admin: "admin" // Route admins to hidden Admin Console
   };
 
   const frontendRole = roleMap[user.role] || "consultant";
 
-  // Show Consultant Dashboard if user is a consultant or admin
+  // Show Consultant Dashboard if user is a consultant
   if (frontendRole === "consultant") {
     return (
-      <>
+      <PermissionsProvider>
         <ConsultantDashboard onLogout={logout} />
         <Toaster />
-      </>
+      </PermissionsProvider>
     );
   }
 
   // Show Teacher/Supervisor Dashboard if user is a teacher
   if (frontendRole === "teacher") {
     return (
-      <>
+      <PermissionsProvider>
         <TeacherSupervisorDashboard onLogout={logout} />
         <Toaster />
-      </>
+      </PermissionsProvider>
     );
   }
 
   // Show Data Scientist Dashboard if user is a data scientist
   if (frontendRole === "dataScientist") {
     return (
-      <>
+      <PermissionsProvider>
         <DataScientistDashboard onLogout={logout} />
         <Toaster />
-      </>
+      </PermissionsProvider>
+    );
+  }
+
+  // Hidden Admin Console (developer-only; no public navigation)
+  if (frontendRole === "admin") {
+    return (
+      <PermissionsProvider>
+        <AdminConsole />
+        <Toaster />
+      </PermissionsProvider>
     );
   }
 

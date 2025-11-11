@@ -1,4 +1,5 @@
-import { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { usePermissions } from "../contexts/PermissionsContext";
 import svgPaths from "../imports/svg-24pp62cn5v";
 import img from "figma:asset/b84a227f158a096d5fb31a5a5f2dd6c595e78767.png";
 import imgImage1 from "figma:asset/5ce7c74a7b703322bab79cb35e6c6cd9197ba400.png";
@@ -9,6 +10,9 @@ import { extendedMockStudents } from "../data/mockStudentsExtended";
 import { MentalHealthRecord, mockMentalHealthRecords } from "../data/mockMentalHealth";
 import { dataScientistNotifications } from "../data/mockNotificationsByRole";
 import { DatasetManagement } from "./DatasetManagementSection";
+import { listModels, createModel, trainModel, deployModel, type MLModel } from "../services/mlModels";
+import { listDatasets } from "../services/datasets";
+import { toast } from "sonner";
 
 interface DataScientistDashboardProps {
   onLogout: () => void;
@@ -847,6 +851,9 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
   const [currentView, setCurrentView] = useState<DashboardView>("modelSettings");
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [notifications, setNotifications] = useState(dataScientistNotifications);
+  const { hasPermission } = usePermissions();
+  const [models, setModels] = useState<MLModel[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
 
   const handleMarkAsRead = (id: string) => {
     setNotifications(prev => 
@@ -857,6 +864,82 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
   const handleDismiss = (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
+
+  async function reloadModels() {
+    try {
+      setIsLoadingModels(true);
+      const res = await listModels({ page: 1, limit: 20, order: "desc", sortBy: "updatedAt" });
+      setModels(res.items ?? []);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to load models");
+    } finally {
+      setIsLoadingModels(false);
+    }
+  }
+
+  useEffect(() => {
+    if (hasPermission("mlModels.manage")) {
+      reloadModels();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasPermission]);
+
+  const latestTrained = useMemo(() => {
+    return models.find(m => m.status === "deployed" || m.status === "trained") ?? models[0];
+  }, [models]);
+
+  async function handleRetrainFromConfig(config: {
+    configName: string;
+    trainTestRatio: number;
+    hyperparameters: Record<string, any>;
+    selectedFeatures: Record<string, boolean>;
+  }) {
+    try {
+      const dsList = await listDatasets({ page: 1, limit: 1, order: "desc", sortBy: "uploadedAt" });
+      const latestDataset = dsList.items?.[0];
+      if (!latestDataset) {
+        toast.error("No dataset available. Please upload a dataset first.");
+        return;
+      }
+      const features = Object.entries(config.selectedFeatures)
+        .filter(([, v]) => v)
+        .map(([k]) => k);
+      const created = await createModel({
+        modelName: config.configName,
+        modelType: "classification",
+        algorithm: "RandomForest",
+        features,
+        targetVariable: "riskLevel",
+        hyperparameters: config.hyperparameters
+      } as any);
+      await trainModel(created.id, {
+        datasetId: latestDataset.id,
+        trainTestSplit: config.trainTestRatio / 100,
+        hyperparameters: config.hyperparameters,
+        features,
+        targetVariable: "riskLevel"
+      });
+      toast.success("Training started/completed");
+      await reloadModels();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to train model");
+    }
+  }
+
+  async function handleDeployLatest() {
+    try {
+      const candidate = latestTrained;
+      if (!candidate) {
+        toast.error("No model available to deploy.");
+        return;
+      }
+      await deployModel(candidate.id);
+      toast.success("Model deployed");
+      await reloadModels();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to deploy model");
+    }
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -870,7 +953,18 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
             onMarkAsRead={handleMarkAsRead}
             onDismiss={handleDismiss}
           />
-          <ModelOverview onOpenConfig={() => setIsConfigDialogOpen(true)} />
+          <ModelOverview onOpenConfig={() => hasPermission("mlModels.manage") && setIsConfigDialogOpen(true)} />
+          {hasPermission("mlModels.manage") && (
+            <div className="absolute left-[calc(16.667%+83.978px)] top-[390px]">
+              <button
+                onClick={handleDeployLatest}
+                disabled={isLoadingModels || !latestTrained}
+                className="px-3 py-2 rounded bg-[#0c1e33] text-white text-sm disabled:opacity-60"
+              >
+                {isLoadingModels ? "Loading..." : "Deploy Latest"}
+              </button>
+            </div>
+          )}
           
           <div className="absolute flex flex-col font-['Poppins:Medium',sans-serif] justify-center leading-[0] left-[calc(91.667%+8.878px)] not-italic text-[#495d72] text-[8.219px] text-center text-nowrap top-[146.55px] translate-x-[-50%] translate-y-[-50%]">
             <p className="leading-[normal] whitespace-pre">9 Nov 2025, Sunday</p>
@@ -882,7 +976,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
           </div>
 
           {/* Dataset Management Section */}
-          <DatasetManagement />
+          {hasPermission("datasets.manage") && <DatasetManagement />}
         </div>
       ) : currentView === "dashboard" ? (
         <div className="ml-[275.351px] relative min-h-screen pb-[600px]">
@@ -903,6 +997,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
       {/* Model Configuration Dialog */}
       <ModelConfigDialog 
         open={isConfigDialogOpen}
+        onSave={handleRetrainFromConfig}
         onOpenChange={setIsConfigDialogOpen}
       />
     </div>

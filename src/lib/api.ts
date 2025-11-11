@@ -43,8 +43,9 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    const isFormData = options.body instanceof FormData;
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...options.headers
     };
 
@@ -60,7 +61,7 @@ class ApiClient {
       });
 
       // Handle empty responses (e.g., 204 No Content)
-      if (response.status === 204 || response.status === 201) {
+      if (response.status === 204) {
         return undefined as T;
       }
 
@@ -113,7 +114,7 @@ class ApiClient {
     return this.request<T>(endpoint, {
       ...options,
       method: 'POST',
-      body: body ? JSON.stringify(body) : undefined
+      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined
     });
   }
 
@@ -121,7 +122,7 @@ class ApiClient {
     return this.request<T>(endpoint, {
       ...options,
       method: 'PUT',
-      body: body ? JSON.stringify(body) : undefined
+      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined
     });
   }
 
@@ -129,7 +130,7 @@ class ApiClient {
     return this.request<T>(endpoint, {
       ...options,
       method: 'PATCH',
-      body: body ? JSON.stringify(body) : undefined
+      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined
     });
   }
 

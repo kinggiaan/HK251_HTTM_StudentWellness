@@ -1,9 +1,11 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { MentalHealthRecord } from "../data/mockMentalHealth";
 import { teacherNotifications } from "../data/mockNotificationsByRole";
 import { NotificationPanel } from "./NotificationPanel";
 import svgPaths from "../imports/svg-ws6xw1un37";
 import img from "figma:asset/b84a227f158a096d5fb31a5a5f2dd6c595e78767.png";
+import { useAuth } from "../contexts/AuthContext";
+import { usePermissions } from "../contexts/PermissionsContext";
 import { useStudents } from "../hooks/useStudents";
 import { transformStudentsToMentalHealthRecords } from "../utils/dataTransform";
 import { toast } from "sonner";
@@ -149,6 +151,8 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
 }
 
 export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout }: TeacherSupervisorDashboardProps) {
+  const { user } = useAuth();
+  const { hasPermission } = usePermissions();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [notifications, setNotifications] = useState(teacherNotifications);
@@ -269,27 +273,33 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
             </div>
 
             <div className="flex items-center gap-[16px]">
-              <input
-                id="import-csv-input"
-                type="file"
-                accept=".csv,text/csv"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleImportFile(file);
-                  e.currentTarget.value = "";
-                }}
-              />
-              <button
-                disabled={isImporting}
-                onClick={() => document.getElementById("import-csv-input")?.click()}
-                className="font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[11.507px] bg-[#e9ebef] hover:bg-[#e1e3e8] transition-colors px-[12px] py-[8px] rounded-[4px] disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isImporting ? "Đang import..." : "Import CSV"}
-              </button>
-              <button className="font-['Poppins:Medium',sans-serif] text-[#2f80ed] text-[11.507px] hover:opacity-80 transition-opacity">
-                Export Data
-              </button>
+              {hasPermission("students.import") && (
+                <>
+                  <input
+                    id="import-csv-input"
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImportFile(file);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                  <button
+                    disabled={isImporting}
+                    onClick={() => document.getElementById("import-csv-input")?.click()}
+                    className="font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[11.507px] bg-[#e9ebef] hover:bg-[#e1e3e8] transition-colors px-[12px] py-[8px] rounded-[4px] disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {isImporting ? "Đang import..." : "Import CSV"}
+                  </button>
+                </>
+              )}
+              {hasPermission("students.export") && (
+                <button className="font-['Poppins:Medium',sans-serif] text-[#2f80ed] text-[11.507px] hover:opacity-80 transition-opacity">
+                  Export Data
+                </button>
+              )}
               
               <div className="bg-[#f5f6f8] flex gap-[9.863px] items-center px-[13.151px] py-[6px] rounded-[4.932px] w-[300px]">
                 <input

@@ -1,16 +1,30 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Slider } from "./ui/slider";
 import { Switch } from "./ui/switch";
 import { Checkbox } from "./ui/checkbox";
 import svgPaths from "../imports/svg-xhq8bqqtxc";
+import { listDatasets } from "../services/datasets";
+import { toast } from "sonner";
 
 interface ModelConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSave?: (config: {
+    configName: string;
+    trainTestRatio: number;
+    hyperparameters: {
+      nEstimators: string;
+      maxFeatures: string;
+      maxDepth: string;
+      criterion: string;
+      bootstrap: boolean;
+    };
+    selectedFeatures: Record<string, boolean>;
+  }) => Promise<void> | void;
 }
 
-export function ModelConfigDialog({ open, onOpenChange }: ModelConfigDialogProps) {
+export function ModelConfigDialog({ open, onOpenChange, onSave }: ModelConfigDialogProps) {
   const [configName, setConfigName] = useState("My First Config");
   const [trainTestRatio, setTrainTestRatio] = useState(80);
   const [nEstimators, setNEstimators] = useState("100");
@@ -18,31 +32,62 @@ export function ModelConfigDialog({ open, onOpenChange }: ModelConfigDialogProps
   const [maxDepth, setMaxDepth] = useState("100");
   const [criterion, setCriterion] = useState("Gini");
   const [bootstrap, setBootstrap] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [featureOptions, setFeatureOptions] = useState<string[]>([]);
   
-  const [selectedFeatures, setSelectedFeatures] = useState({
-    feature1: true,
-    feature2: true,
-    feature3: true,
-    feature4: true,
-    feature5: true,
-    feature6: true,
-    feature7: true,
-    feature8: false,
-  });
+  const [selectedFeatures, setSelectedFeatures] = useState<Record<string, boolean>>({});
 
-  const handleSave = () => {
-    // Handle save logic here
-    console.log("Saving configuration:", {
-      configName,
-      trainTestRatio,
-      nEstimators,
-      maxFeatures,
-      maxDepth,
-      criterion,
-      bootstrap,
-      selectedFeatures,
-    });
-    onOpenChange(false);
+  useEffect(() => {
+    async function loadLatestDatasetFeatures() {
+      try {
+        const res = await listDatasets({ page: 1, limit: 1 });
+        const latest = res.items?.[0];
+        const features = (latest?.features as unknown as string[]) || [];
+        if (features.length === 0) {
+          setFeatureOptions([]);
+          setSelectedFeatures({});
+          return;
+        }
+        setFeatureOptions(features);
+        // initialize selection: enable all by default
+        const defaults: Record<string, boolean> = {};
+        for (const f of features) defaults[f] = true;
+        setSelectedFeatures(defaults);
+      } catch (e: any) {
+        toast.error(e?.message ?? "Failed to load dataset features");
+      }
+    }
+    if (open) {
+      loadLatestDatasetFeatures();
+    }
+  }, [open]);
+
+  const prettyName = (name: string) =>
+    name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const handleSave = async () => {
+    if (!onSave) {
+      onOpenChange(false);
+      return;
+    }
+    try {
+      setIsSaving(true);
+      await onSave({
+        configName,
+        trainTestRatio,
+        hyperparameters: {
+          nEstimators,
+          maxFeatures,
+          maxDepth,
+          criterion,
+          bootstrap,
+        },
+        selectedFeatures,
+      });
+      onOpenChange(false);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = () => {
@@ -89,22 +134,26 @@ export function ModelConfigDialog({ open, onOpenChange }: ModelConfigDialogProps
             <h3 className="font-['Poppins:Medium',sans-serif] text-[20px] text-black mb-4">
               Features selection
             </h3>
-            <div className="grid grid-cols-3 gap-4">
-              {Object.entries(selectedFeatures).map(([key, value], index) => (
-                <div key={key} className="flex items-center gap-3">
-                  <Checkbox
-                    checked={value}
-                    onCheckedChange={(checked) =>
-                      setSelectedFeatures({ ...selectedFeatures, [key]: checked as boolean })
-                    }
-                    className="size-[18px]"
-                  />
-                  <span className="font-['Poppins:Regular',sans-serif] text-[16px] text-black">
-                    Sleep quality
-                  </span>
-                </div>
-              ))}
-            </div>
+            {featureOptions.length === 0 ? (
+              <p className="text-sm text-[#495d72]">No dataset or features detected. Please upload a dataset first.</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                {featureOptions.map((key) => (
+                  <div key={key} className="flex items-center gap-3">
+                    <Checkbox
+                      checked={Boolean(selectedFeatures[key])}
+                      onCheckedChange={(checked) =>
+                        setSelectedFeatures({ ...selectedFeatures, [key]: Boolean(checked) })
+                      }
+                      className="size-[18px]"
+                    />
+                    <span className="font-['Poppins:Regular',sans-serif] text-[16px] text-black">
+                      {prettyName(key)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Train:Test Ratio */}
@@ -231,9 +280,10 @@ export function ModelConfigDialog({ open, onOpenChange }: ModelConfigDialogProps
             </button>
             <button
               onClick={handleSave}
+              disabled={isSaving}
               className="bg-[#44dd9e] h-[56px] px-[14px] py-[6px] rounded-[14px] font-['Poppins:Medium',sans-serif] text-[20px] text-white hover:bg-[#44dd9e]/90 transition-colors min-w-[107px]"
             >
-              Save
+              {isSaving ? "Saving..." : "Save"}
             </button>
           </div>
         </div>
