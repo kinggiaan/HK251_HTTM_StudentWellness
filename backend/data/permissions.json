@@ -1,0 +1,50 @@
+{
+  "consultant": {
+    "users.manage": false,
+    "students.viewAll": false,
+    "students.create": true,
+    "students.update": true,
+    "students.delete": true,
+    "students.export": true,
+    "records.viewAll": false,
+    "records.create": true,
+    "records.update": true,
+    "records.delete": true,
+    "sessions.manageOwn": true,
+    "analytics.viewAll": false,
+    "mlModels.manage": false,
+    "datasets.manage": false
+  },
+  "teacher_supervisor": {
+    "users.manage": false,
+    "students.viewAll": true,
+    "students.create": false,
+    "students.update": false,
+    "students.delete": false,
+    "students.export": false,
+    "records.viewAll": true,
+    "records.create": false,
+    "records.update": false,
+    "records.delete": false,
+    "sessions.manageOwn": false,
+    "analytics.viewAll": true,
+    "mlModels.manage": false,
+    "datasets.manage": false
+  },
+  "data_scientist": {
+    "users.manage": false,
+    "students.viewAll": true,
+    "students.create": false,
+    "students.update": false,
+    "students.delete": false,
+    "students.export": true,
+    "records.viewAll": false,
+    "records.create": false,
+    "records.update": false,
+    "records.delete": false,
+    "sessions.manageOwn": false,
+    "analytics.viewAll": true,
+    "mlModels.manage": true,
+    "datasets.manage": true
+  }
+}

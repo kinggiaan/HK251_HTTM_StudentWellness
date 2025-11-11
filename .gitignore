@@ -11,6 +11,7 @@ tmp/
 coverage/
 *.sqlite
 *.cache/
-.cursorindexingignore
 .specstory/
+backend/uploads/
+backend/data/*.tmp
 
