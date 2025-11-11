@@ -1,5 +1,5 @@
 import { UserRole } from '@prisma/client';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 
 import { prisma } from '../../config';
@@ -85,8 +85,8 @@ export async function listDatasets(query: ListDatasetsQuery, context: RequestCon
     throw new AppError('Forbidden', HTTP_STATUS.FORBIDDEN);
   }
 
-  const page = query.page ?? 1;
-  const limit = query.limit ?? 20;
+  const page = Number(query.page ?? 1);
+  const limit = Number(query.limit ?? 20);
   const skip = (page - 1) * limit;
 
   const [datasets, total] = await Promise.all([
@@ -194,6 +194,7 @@ export async function uploadDataset(
   const filePath = join(uploadsDir, fileName);
 
   // Save file (in production, use S3)
+  await mkdir(uploadsDir, { recursive: true });
   await writeFile(filePath, file.buffer);
 
   // Parse CSV to get basic info

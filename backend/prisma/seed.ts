@@ -47,10 +47,10 @@ async function main() {
 
   // Create data scientist user
   const dataScientist = await prisma.user.upsert({
-    where: { email: 'datascientist@university.edu' },
+    where: { email: 'datascientist2@university.edu' },
     update: {},
     create: {
-      email: 'datascientist@university.edu',
+      email: 'datascientist2@university.edu',
       password: await hashPassword('password123'),
       role: 'data_scientist',
       fullName: 'Dr. Emily Chen'

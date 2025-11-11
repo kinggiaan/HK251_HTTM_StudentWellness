@@ -9,11 +9,13 @@ import { notificationsRouter } from '../modules/notifications';
 import { sessionsRouter } from '../modules/sessions';
 import { studentsRouter } from '../modules/students';
 import { usersRouter } from '../modules/users';
+import { adminRouter } from '../modules/admin/permissions.routes';
 
 const router = Router();
 
 router.use('/auth', authRouter);
 router.use('/users', usersRouter);
+router.use('/admin', adminRouter);
 router.use('/students', studentsRouter);
 router.use('/sessions', sessionsRouter);
 router.use('/notifications', notificationsRouter);
