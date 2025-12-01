@@ -33,6 +33,18 @@
   - Commit: “chore: track backend data config; ignore runtime uploads directory”
   - Ghi nhận cấu hình dữ liệu cần versioning, bỏ qua thư mục runtime `uploads`.
 
+- Refactor ML local service theo layered architecture
+  - Commit gợi ý: `refactor(ml-service): split express server into app routes services utils`
+  - Nội dung: tách `ml-service/src/index.ts` thành `app.ts`, `routes/*`, `services/training.service.ts`, `utils/csvReader.ts`, `utils/metrics.ts`, giữ nguyên hợp đồng API `/train` cho backend.
+
+- Chuẩn hoá frontend API layer & cập nhật README
+  - Commit gợi ý: `refactor(frontend): route student import via students service api client`
+  - Nội dung: dùng `studentsService.import()` (dựa trên `src/lib/api.ts`) thay cho `fetch` trực tiếp trong `TeacherSupervisorDashboard`, mô tả lại cấu trúc FE/BE/ML trong `README.md`.
+
+- Cập nhật tài liệu kiến trúc & hướng dẫn chạy
+  - Commit gợi ý: `docs: update software architecture and ml integration guides`
+  - Nội dung: chỉnh `docs/01-Software-Architecture.md`, `docs/08-Development-Guide.md`, `docs/ML_LOCAL_SERVICE.md`, `docs/ML_INTEGRATION_PLAN.md`, `QUICKSTART.md`, `START_PROJECT.md` để phản ánh ML service mới, luồng tích hợp BE–ML–FE và cấu trúc thư mục thực tế.
+
 
 
 #### 3) Quy ước nhánh và quy trình làm việc (Workflow)

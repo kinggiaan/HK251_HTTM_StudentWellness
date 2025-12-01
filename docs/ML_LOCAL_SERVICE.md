@@ -7,7 +7,17 @@ Mục tiêu: chạy train cục bộ để test end-to-end trước khi đưa on
 ml-service/
   package.json
   tsconfig.json
-  src/index.ts     # Express server: POST /train
+  src/
+    index.ts          # Entry: khởi động server, đọc PORT
+    app.ts            # Khởi tạo Express app, gắn middleware + routes
+    routes/
+      health.routes.ts  # GET / và GET /health
+      train.routes.ts   # POST /train
+    services/
+      training.service.ts # Business logic train, gọi utils
+    utils/
+      csvReader.ts     # Đọc CSV, đếm số dòng
+      metrics.ts       # Tính metrics mock (accuracy, precision, recall, f1Score, samples)
 ```
 
 ### 2) Chạy service

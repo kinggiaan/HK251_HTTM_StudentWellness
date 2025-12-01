@@ -18,6 +18,22 @@ node --version
 Nếu chưa có hoặc version cũ, tải từ: https://nodejs.org/
 
 ### Bước 2: Khởi Động Backend Services (PostgreSQL & Redis)
+### (Tuỳ chọn) Bước 2b: Khởi động ML Local Service
+
+ML Local Service là service Node.js/Express trong thư mục `ml-service/`, dùng để giả lập quá trình train ML (endpoint `POST /train`). Chỉ cần chạy nếu bạn muốn test full ML flow cho Data Scientist Dashboard.
+
+```bash
+cd ml-service
+npm install
+npm run dev
+```
+
+Service sẽ chạy tại: **http://localhost:5001**
+
+Đảm bảo trong `backend/.env` có biến:
+```env
+ML_SERVICE_URL=http://localhost:5001
+```
 
 Mở terminal/PowerShell và chạy:
 

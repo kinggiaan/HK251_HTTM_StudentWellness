@@ -13,6 +13,7 @@ This document outlines how the Data Scientist features integrate across UI and B
   - Analytics: `backend/src/modules/analytics` (overview/distribution/trends).
   - Permissions admin: `backend/src/modules/admin/permissions.routes.ts`.
   - Persistence: Prisma models `Dataset` and `MLModel` already defined.
+  - ML Integration: `backend/src/modules/mlModels/mlModels.service.ts` gọi external ML service qua `ML_SERVICE_URL` (local là service Node/Express trong thư mục `ml-service/`).
 
 ### 2) Storage Strategy (Local-first)
 - Goal: single code path that works locally and online.

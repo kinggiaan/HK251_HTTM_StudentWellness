@@ -23,25 +23,33 @@ Hướng dẫn này giúp developers setup môi trường phát triển và làm
 
 ```
 HTTM_Project/
-├── backend/              # Backend application
+├── backend/              # Backend application (Application Layer)
 │   ├── src/
-│   │   ├── modules/     # Feature modules
+│   │   ├── modules/     # Feature modules (auth, users, students, datasets, mlModels, ...)
 │   │   ├── middleware/  # Express middleware
 │   │   ├── routes/      # Route definitions
 │   │   ├── utils/       # Utility functions
-│   │   └── config/      # Configuration
+│   │   └── config/      # Configuration (env, logger, db)
 │   ├── prisma/          # Database schema & migrations
 │   ├── tests/           # Test files
 │   └── package.json
-├── src/                 # Frontend application
-│   ├── components/      # React components
-│   ├── contexts/        # React contexts
-│   ├── services/        # API services
-│   ├── hooks/          # Custom hooks
-│   ├── utils/          # Utility functions
-│   └── lib/            # Library configs
-├── docs/               # Documentation
-└── package.json        # Root package.json
+├── src/                 # Frontend application (Presentation Layer)
+│   ├── components/      # React components (dashboards theo vai trò, shared UI dưới `components/ui/`)
+│   ├── contexts/        # React contexts (Auth, Permissions, ...)
+│   ├── services/        # API services map 1-1 với backend modules (auth, students, datasets, mlModels, ...)
+│   ├── hooks/           # Custom hooks
+│   ├── utils/           # Utility functions
+│   └── lib/             # Library configs (vd. `lib/api.ts` - API client dùng chung)
+├── ml-service/          # Local ML Service (External Service cho training)
+│   ├── src/
+│   │   ├── index.ts     # Entry: khởi động Express server
+│   │   ├── app.ts       # Khởi tạo app, middleware, đăng ký routes
+│   │   ├── routes/      # `health.routes.ts`, `train.routes.ts`
+│   │   ├── services/    # `training.service.ts` - business logic train
+│   │   └── utils/       # `csvReader.ts`, `metrics.ts`
+│   └── package.json
+├── docs/                # Documentation
+└── package.json         # Root package.json (frontend)
 ```
 
 ## 4. Setup Development Environment

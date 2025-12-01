@@ -46,7 +46,7 @@ Hệ thống sử dụng kiến trúc **3-Tier Architecture** với các lớp:
 - **Build Tool**: Vite
 - **State Management**: React Context API
 - **UI Library**: Custom components với Tailwind CSS
-- **HTTP Client**: Fetch API với custom wrapper
+- **HTTP Client**: Custom API client `src/lib/api.ts` (wrapper quanh Fetch API, được dùng bởi tất cả `src/services/*`)
 - **Real-time**: Socket.IO Client (tương lai)
 
 **Cấu trúc thư mục:**
@@ -104,10 +104,12 @@ backend/
 
 ### 2.3 External Services
 
-#### 2.3.1 ML Service (Tương lai)
+#### 2.3.1 ML Service (Local-first, Cloud-ready)
 - **Purpose**: Machine Learning model training và inference
+- **Implementation hiện tại (local)**: service Node.js + Express trong thư mục `ml-service/`, cung cấp endpoint `POST /train` đọc file CSV local và trả về metrics mock ổn định để test end-to-end.
 - **Protocol**: REST API
-- **Integration**: Backend gọi ML service qua HTTP
+- **Integration**: Backend (module `mlModels`) gọi ML service qua HTTP thông qua biến môi trường `ML_SERVICE_URL`.
+- **Tương lai**: Có thể thay thế bằng service Python/Cloud (SageMaker, Vertex AI, ...) nhưng giữ nguyên hợp đồng API `/train`.
 
 #### 2.3.2 File Storage (Tương lai)
 - **Purpose**: Lưu trữ files (datasets, documents)

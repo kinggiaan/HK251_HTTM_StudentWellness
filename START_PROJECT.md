@@ -40,7 +40,7 @@ npm install
 Copy-Item env.example .env
 ```
 
-**Nội dung file `.env` cần có:**
+**Nội dung file `.env` cần có (rút gọn, xem đầy đủ trong `backend/env.example`):**
 ```
 NODE_ENV=development
 PORT=4000
@@ -56,6 +56,8 @@ REFRESH_TOKEN_EXPIRY=7d
 BCRYPT_SALT_ROUNDS=12
 
 REDIS_URL=redis://localhost:6379
+
+ML_SERVICE_URL=http://localhost:5001  # Local ML Service (tuỳ chọn)
 
 FRONTEND_ORIGIN=http://localhost:3000
 RATE_LIMIT_WINDOW_MS=60000
@@ -122,7 +124,19 @@ VITE_API_BASE_URL=http://localhost:4000/api
 echo "VITE_API_BASE_URL=http://localhost:4000/api" | Out-File -FilePath .env -Encoding utf8
 ```
 
-### 3.3 Chạy Frontend
+### 3.3 (Tuỳ chọn) Setup & Chạy ML Local Service
+
+Nếu bạn muốn test toàn bộ Data Scientist flow (upload dataset, train model và xem metrics), hãy khởi động ML Local Service:
+
+```bash
+cd ml-service
+npm install
+npm run dev
+```
+
+Service sẽ chạy tại: `http://localhost:5001` và backend sẽ gọi qua `ML_SERVICE_URL`.
+
+### 3.4 Chạy Frontend
 
 **⚠️ QUAN TRỌNG**: Đảm bảo bạn đang ở **root directory** (`D:\HCMUT\HTTM\HTTM_Project`), KHÔNG phải trong thư mục `src`!
 
