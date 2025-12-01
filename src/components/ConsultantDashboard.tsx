@@ -67,7 +67,7 @@ function WelcomeHelp() {
         </p>
         <button className="mt-4 bg-[#0c1e33] text-white px-[13.151px] py-[9.863px] rounded-[4px] hover:bg-[#0c1e33]/90 transition-colors">
           Learn More
-        </button>
+      </button>
       </div>
     </div>
   );
@@ -234,9 +234,9 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
 
             <div className="flex items-center gap-[16px]">
               {hasPermission("students.export") && (
-                <button className="font-['Poppins:Medium',sans-serif] text-[#2f80ed] text-[11.507px] hover:opacity-80 transition-opacity">
-                  Export Data
-                </button>
+              <button className="font-['Poppins:Medium',sans-serif] text-[#2f80ed] text-[11.507px] hover:opacity-80 transition-opacity">
+                Export Data
+              </button>
               )
               }
               

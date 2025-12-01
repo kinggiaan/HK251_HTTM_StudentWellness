@@ -296,9 +296,9 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                 </>
               )}
               {hasPermission("students.export") && (
-                <button className="font-['Poppins:Medium',sans-serif] text-[#2f80ed] text-[11.507px] hover:opacity-80 transition-opacity">
-                  Export Data
-                </button>
+              <button className="font-['Poppins:Medium',sans-serif] text-[#2f80ed] text-[11.507px] hover:opacity-80 transition-opacity">
+                Export Data
+              </button>
               )}
               
               <div className="bg-[#f5f6f8] flex gap-[9.863px] items-center px-[13.151px] py-[6px] rounded-[4.932px] w-[300px]">
@@ -322,7 +322,7 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
             </div>
           </div>
 
-        {/* Scrollable Table Container */}
+          {/* Scrollable Table Container */}
         {isLoadingStudents && records.length === 0 && (
           <div className="flex items-center justify-center py-[40px]">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0c1e33]"></div>
@@ -335,7 +335,7 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
           </div>
         )}
         {!isLoadingStudents && records.length > 0 && (
-        <div className="overflow-x-auto rounded-[4px] border border-[#ced8e5]">
+          <div className="overflow-x-auto rounded-[4px] border border-[#ced8e5]">
             <table className="w-full min-w-[2400px]">
               <thead>
                 <tr className="bg-[#f4f6f7] border-b border-[#ced8e5]">

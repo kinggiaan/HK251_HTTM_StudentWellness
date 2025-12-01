@@ -27,10 +27,15 @@ function generateVersion(): string {
 async function callMLService(endpoint: string, data: any): Promise<any> {
   const mlServiceUrl = env.ML_SERVICE_URL;
   if (!mlServiceUrl) {
+    console.warn('[ML] ML_SERVICE_URL is not configured. Skipping real training call.');
     throw new AppError('ML Service not configured', HTTP_STATUS.INTERNAL_SERVER_ERROR);
   }
 
   try {
+    console.info('[ML] Calling ML service', {
+      url: `${mlServiceUrl}${endpoint}`,
+      payloadKeys: Object.keys(data ?? {})
+    });
     const response = await fetch(`${mlServiceUrl}${endpoint}`, {
       method: 'POST',
       headers: {
@@ -40,14 +45,19 @@ async function callMLService(endpoint: string, data: any): Promise<any> {
     });
 
     if (!response.ok) {
+      console.error('[ML] ML service returned non-OK status', response.status, response.statusText);
       throw new Error(`ML Service error: ${response.statusText}`);
     }
 
+    console.info('[ML] ML service responded OK');
     return await response.json();
   } catch (error: any) {
     // In development, return mock response if ML service is not available
     if (env.NODE_ENV === 'development') {
-      console.warn('ML Service not available, returning mock response');
+      console.warn('[ML] Failed to call ML service, returning mock response', {
+        error: error?.message,
+        url: `${mlServiceUrl}${endpoint}`
+      });
       return {
         success: true,
         modelId: data.modelId,
@@ -320,6 +330,7 @@ export async function trainModel(id: string, input: TrainModelInput, context: Re
   const result = await callMLService('/train', {
     modelId: id,
     datasetId: input.datasetId,
+    datasetPath: dataset.fileUrl, // local path for local ML service
     algorithm: model.algorithm,
     hyperparameters: model.hyperparameters,
     features: model.features,

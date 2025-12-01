@@ -39,7 +39,27 @@ export async function listModels(params: ListModelsParams = {}): Promise<{ items
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null) query.set(k, String(v));
   });
-  return apiClient.get(`/ml/models?${query.toString()}`);
+  const res = await apiClient.get(`/ml/models?${query.toString()}`);
+  // Normalize shape: backend may return { data, pagination } or already { items, total, ... }
+  if (Array.isArray(res?.data) && res?.pagination) {
+    return {
+      items: res.data as MLModel[],
+      total: Number(res.pagination.total ?? (res.data as MLModel[]).length),
+      page: Number(res.pagination.page ?? params.page ?? 1),
+      limit: Number(res.pagination.limit ?? params.limit ?? 20),
+    };
+  }
+  if (Array.isArray(res?.items)) {
+    return {
+      items: res.items as MLModel[],
+      total: Number(res.total ?? (res.items as MLModel[]).length),
+      page: Number(res.page ?? params.page ?? 1),
+      limit: Number(res.limit ?? params.limit ?? 20),
+    };
+  }
+  // Fallback
+  const arr = Array.isArray(res) ? res : [];
+  return { items: arr as MLModel[], total: arr.length, page: Number(params.page ?? 1), limit: Number(params.limit ?? 20) };
 }
 
 export async function createModel(input: Partial<MLModel> & { modelName: string; modelType: MLModel['modelType']; algorithm: string; }): Promise<MLModel> {
