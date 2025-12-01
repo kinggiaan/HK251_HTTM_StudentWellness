@@ -76,6 +76,10 @@ export interface UpdateStudentInput {
   consultantId?: string;
 }
 
+interface ImportStudentsPayload {
+  students: Record<string, string>[];
+}
+
 export const studentsService = {
   async list(params?: ListStudentsParams): Promise<ListStudentsResponse> {
     const queryParams = new URLSearchParams();
@@ -122,6 +126,11 @@ export const studentsService = {
 
   async delete(id: string): Promise<void> {
     return apiClient.delete(`/students/${id}`);
+  },
+
+  async import(payload: ImportStudentsPayload): Promise<void> {
+    await apiClient.post<void>('/students/import', payload);
   }
 };
+
 

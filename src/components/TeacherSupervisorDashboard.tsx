@@ -9,6 +9,7 @@ import { usePermissions } from "../contexts/PermissionsContext";
 import { useStudents } from "../hooks/useStudents";
 import { transformStudentsToMentalHealthRecords } from "../utils/dataTransform";
 import { toast } from "sonner";
+import { studentsService } from "../services/students.service";
 
 interface TeacherSupervisorDashboardProps {
   mentalHealthRecords?: MentalHealthRecord[];
@@ -192,13 +193,8 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
         headers.forEach((h, i) => { obj[h] = (cells[i] ?? "").trim(); });
         return obj;
       });
-      // POST to backend (adjust URL if needed)
-      const res = await fetch("/api/students/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ students: rows })
-      });
-      if (!res.ok) throw new Error(await res.text());
+
+      await studentsService.import({ students: rows });
       toast.success("Import thành công");
     } catch (err:any) {
       toast.error("Import thất bại" + (err?.message ? `: ${err.message}` : ""));
