@@ -1,0 +1,148 @@
+{
+  "kind": "collectionType",
+  "collectionName": "students",
+  "info": {
+    "singularName": "student",
+    "pluralName": "students",
+    "displayName": "Student"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string"
+    },
+    "age": {
+      "type": "integer"
+    },
+    "course": {
+      "type": "string"
+    },
+    "gender": {
+      "type": "enumeration",
+      "enum": [
+        "Male",
+        "Female"
+      ]
+    },
+    "cgpa": {
+      "type": "decimal"
+    },
+    "sleep_quality": {
+      "type": "enumeration",
+      "enum": [
+        "Poor",
+        "Average",
+        "Good"
+      ]
+    },
+    "physical_activity": {
+      "type": "enumeration",
+      "enum": [
+        "Low",
+        "Moderate",
+        "High"
+      ]
+    },
+    "diet_quality": {
+      "type": "enumeration",
+      "enum": [
+        "Poor",
+        "Average",
+        "Good"
+      ]
+    },
+    "social_support": {
+      "type": "enumeration",
+      "enum": [
+        "Low",
+        "Moderate",
+        "High"
+      ]
+    },
+    "relationship_status": {
+      "type": "enumeration",
+      "enum": [
+        "Single",
+        "In a Relationship",
+        "Married"
+      ]
+    },
+    "substance_use": {
+      "type": "enumeration",
+      "enum": [
+        "Never",
+        "Occasionally",
+        "Frequently"
+      ]
+    },
+    "counseling_service_use": {
+      "type": "enumeration",
+      "enum": [
+        "Never",
+        "Occasionally",
+        "Frequently"
+      ]
+    },
+    "family_history": {
+      "type": "enumeration",
+      "enum": [
+        "No",
+        "Yes"
+      ]
+    },
+    "chronic_illness": {
+      "type": "enumeration",
+      "enum": [
+        "No",
+        "Yes"
+      ]
+    },
+    "financial_stress": {
+      "type": "integer"
+    },
+    "extracurricular_involvement": {
+      "type": "enumeration",
+      "enum": [
+        "Low",
+        "Moderate",
+        "High"
+      ]
+    },
+    "semester_credit_load": {
+      "type": "integer"
+    },
+    "residence_type": {
+      "type": "enumeration",
+      "enum": [
+        "Off-Campus",
+        "On-Campus",
+        "With Family"
+      ]
+    },
+    "true_stress_level": {
+      "type": "integer"
+    },
+    "true_depression_score": {
+      "type": "integer"
+    },
+    "true_anxiety_score": {
+      "type": "integer"
+    },
+    "pred_stress_level": {
+      "type": "integer"
+    },
+    "pred_depression_score": {
+      "type": "integer"
+    },
+    "pred_anxiety_score": {
+      "type": "integer"
+    },
+    "validated": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}
