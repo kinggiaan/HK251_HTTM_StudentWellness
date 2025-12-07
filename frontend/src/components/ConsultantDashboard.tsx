@@ -16,8 +16,11 @@ interface ConsultantDashboardProps {
 
 function Welcome({ userName }: { userName?: string }) {
   return (
-    <div className="flex items-center gap-3 px-8 pt-6 text-[#0c1e33] text-[19.727px]">
-      <span className="font-['Rubik:Bold',sans-serif]">👋</span>
+    <div className="flex items-center gap-3 px-8 pt-6 text-slate-900 text-lg">
+      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+          d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
+      </svg>
       <p className="capitalize font-['Poppins:Regular',sans-serif]">Welcome, {userName || 'User'}!</p>
     </div>
   );
@@ -65,7 +68,7 @@ function WelcomeHelp() {
         <p className="font-['Poppins:Regular',sans-serif] text-[#495d72] text-[13.151px]">
           We are here to support you. <span className="font-['Poppins:ExtraBold',sans-serif]">Learn more</span> to explore tips to understand and manage your students better!
         </p>
-        <button className="mt-4 bg-[#0c1e33] text-white px-[13.151px] py-[9.863px] rounded-[4px] hover:bg-[#0c1e33]/90 transition-colors">
+        <button className="mt-4 bg-[#0c1e33] text-white px-[13.151px] py-[9.863px] rounded-[4px] hover:bg-[#0c1e33]/90 transition-colors cursor-pointer">
           Learn More
       </button>
       </div>
@@ -117,7 +120,7 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
       {/* Logout Button */}
       <button
         onClick={onLogout}
-        className="absolute box-border content-stretch flex gap-[9.863px] h-[39.453px] items-center left-[47px] overflow-clip px-[13.151px] py-[9.863px] top-[202px] w-[201.376px] hover:bg-white/10 transition-colors cursor-pointer"
+        className="absolute box-border content-stretch flex gap-[9.863px] h-[39.453px] items-center left-[47px] overflow-clip px-[13.151px] py-[9.863px] top-[202px] w-[201.376px] hover:bg-white/10 transition-colors duration-200 cursor-pointer"
       >
         <div className="relative shrink-0 size-[19.727px]">
           <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">

@@ -1096,9 +1096,13 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                     <button
                       onClick={handleDeployLatest}
                       disabled={isLoadingModels || !latestTrained}
-                      className="px-5 py-2.5 bg-[#16a34a] text-white text-sm font-semibold rounded-lg hover:bg-[#15803d] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                      className="px-5 py-2.5 bg-[#16a34a] text-white text-sm font-semibold rounded-lg hover:bg-[#15803d] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 hover:shadow-lg flex items-center gap-2 cursor-pointer"
                     >
-                      🚀 Deploy
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                          d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Deploy
                     </button>
                   </div>
                 )}
@@ -1278,7 +1282,12 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-                      <span className="text-3xl">⚙️</span>
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
                     </div>
                     <div>
                       <h2 className="text-3xl font-black text-gray-900">Model Configuration</h2>
@@ -1311,9 +1320,12 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                       </div>
                       <button
                         onClick={openConfigDialog}
-                        className="mt-6 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-base font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg hover:scale-105 flex items-center gap-2"
+                        className="mt-6 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-base font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-colors duration-200 shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer"
                       >
-                        <span>✏️</span>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
                         <span>Create / Edit</span>
                       </button>
                     </div>
@@ -1383,7 +1395,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                               {Object.entries(cfg.selectedFeatures || {})
                                 .filter(([, v]) => v)
                                 .map(([key], idx) => (
-                                  <span key={key} className={`px-4 py-2 text-white text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-all hover:scale-105 cursor-default ${
+                                  <span key={key} className={`px-4 py-2 text-white text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 ${
                                     idx % 6 === 0 ? 'bg-blue-600' :
                                     idx % 6 === 1 ? 'bg-purple-600' :
                                     idx % 6 === 2 ? 'bg-green-600' :
@@ -1509,7 +1521,10 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <div className="text-5xl mb-3">🚀</div>
+                  <svg className="w-16 h-16 text-blue-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                      d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
                   <p className="text-gray-600 font-medium">No training history yet</p>
                   <p className="text-sm text-gray-500 mt-2">Train your first model to see results here</p>
                 </div>
@@ -1524,9 +1539,15 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
           {/* Top Bar with User Info */}
           <div className="bg-white border-b border-gray-100 px-8 py-3">
             <div className="flex items-center justify-between">
-              <h1 className="text-xl font-['Poppins:SemiBold',sans-serif] text-[#0c1e33]">
-                👋 Welcome, Data Scientist!
-              </h1>
+              <div className="flex items-center gap-3">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                    d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
+                </svg>
+                <h1 className="text-xl font-['Poppins:SemiBold',sans-serif] text-slate-900">
+                  Welcome, Data Scientist!
+                </h1>
+              </div>
               <div className="flex items-center gap-4">
                 <NotificationPanel 
                   notifications={notifications}
