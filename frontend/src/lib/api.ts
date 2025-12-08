@@ -77,13 +77,15 @@ class ApiClient {
         return undefined as T;
       }
 
-      const data: ApiResponse<T> = await response.json();
+      const data = await response.json();
 
       if (!response.ok) {
+        // Handle Strapi error format
+        const errorMessage = data?.error?.message || data?.message || data?.error?.details?.message || 'An error occurred';
         const error: ApiError = {
-          message: data?.message || data?.error || 'An error occurred',
+          message: typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage),
           status: response.status,
-          errors: (data as any)?.errors
+          errors: data?.error?.details?.errors || (data as any)?.errors
         };
         throw error;
       }

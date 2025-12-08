@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, type User, type LoginCredentials } from '../services/auth.service';
+import { apiClient } from '../lib/api';
 import { toast } from 'sonner';
 
 interface AuthContextType {
@@ -25,6 +26,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const refreshToken = authService.getStoredRefreshToken();
       if (refreshToken) {
         try {
+          // Just validate token by setting it and fetching user info
+          apiClient.setAccessToken(refreshToken);
           const response = await authService.refresh(refreshToken);
           setUser(response.user);
           authService.setStoredRefreshToken(response.token.refreshToken);
@@ -46,9 +49,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await authService.login(credentials);
       setUser(response.user);
       authService.setStoredRefreshToken(response.token.refreshToken);
-      toast.success('Login successful!');
+      toast.success(`Welcome back, ${response.user.name || response.user.email}!`);
     } catch (error: any) {
-      toast.error(error.message || 'Login failed. Please check your credentials.');
+      // Format error message for better visibility
+      let errorMsg = 'Login failed. Please check your credentials.';
+      
+      if (typeof error?.message === 'string') {
+        errorMsg = error.message;
+      } else if (error?.status === 400) {
+        errorMsg = 'Invalid email or password. Please try again.';
+      } else if (error?.status === 401) {
+        errorMsg = 'Authentication failed. Please check your credentials.';
+      } else if (error?.status === 404) {
+        errorMsg = 'Account not found. Please contact administrator.';
+      } else if (error?.status >= 500) {
+        errorMsg = 'Server error. Please try again later.';
+      }
+      
+      toast.error(errorMsg, {
+        duration: 5000,
+        description: error?.status ? `Error code: ${error.status}` : undefined
+      });
       throw error;
     }
   };
@@ -113,6 +134,4 @@ export function useAuth() {
   }
   return context;
 }
-
-import { apiClient } from '../lib/api';
 
