@@ -2,6 +2,7 @@
 
 /* Import Tailwind base styles */
 @import 'tailwindcss';
+@config "../tailwind.config.js";
 
 /* Custom animations */
 @keyframes gradient {
@@ -142,7 +143,7 @@
   }
   
   .card-hover {
-    @apply card cursor-pointer hover:shadow-lg transition-shadow duration-200;
+    @apply bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow duration-200;
   }
   
   .card-flat {
@@ -158,7 +159,7 @@
   }
   
   .input-error {
-    @apply input border-danger focus:border-danger focus:ring-danger/20;
+    @apply w-full px-4 py-2 border border-border rounded-lg transition-colors duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed border-danger focus:border-danger focus:ring-danger/20;
   }
   
   /* Badge Styles */
@@ -167,19 +168,19 @@
   }
   
   .badge-primary {
-    @apply badge bg-primary-100 text-primary-700;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700;
   }
   
   .badge-success {
-    @apply badge bg-success-100 text-success-700;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-700;
   }
   
   .badge-warning {
-    @apply badge bg-warning-100 text-warning-700;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-100 text-warning-700;
   }
   
   .badge-danger {
-    @apply badge bg-danger-100 text-danger-700;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-danger-100 text-danger-700;
   }
 }
 
