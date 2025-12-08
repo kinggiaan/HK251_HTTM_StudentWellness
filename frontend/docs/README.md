@@ -8,18 +8,22 @@ Thư mục này chứa tất cả các tài liệu kỹ thuật và nghiệp v�
 - **[Software Architecture](./01-Software-Architecture.md)** - Kiến trúc tổng thể của hệ thống
 - **[System Design](./02-System-Design.md)** - Thiết kế hệ thống chi tiết
 - **[Database Schema](./03-Database-Schema.md)** - Mô hình dữ liệu và schema
+- **[Frontend Architecture](./07-Frontend-Architecture.md)** - Kiến trúc chi tiết Frontend (React/Vite)
+- **[Component Library](./10-Component-Library.md)** - Hệ thống Design System & UI Components
 
 ### 2. Nghiệp Vụ
 - **[Use Cases](./04-Use-Cases.md)** - Các use case và user stories
 - **[User Roles & Permissions](./05-User-Roles-Permissions.md)** - Vai trò người dùng và quyền hạn
+- **[User Guide (AI Features)](./11-User-Guide.md)** - Hướng dẫn sử dụng tính năng AI cho các role
 
 ### 3. API & Integration
 - **[API Documentation](./06-API-Documentation.md)** - Tài liệu API endpoints
-- **[Frontend-Backend Integration](./07-Frontend-Backend-Integration.md)** - Tích hợp frontend-backend
+- **[Frontend-Backend Integration](./13-Integration-Patterns.md)** - Tích hợp frontend-backend (Auth, API Client, Error Handling)
+- **[AI Integration Guide](./09-AI-Integration-Guide.md)** - Hướng dẫn tích hợp AI/ML vào Frontend
 
 ### 4. Development
 - **[Development Guide](./08-Development-Guide.md)** - Hướng dẫn phát triển
-- **[Testing Guide](./09-Testing-Guide.md)** - Hướng dẫn testing
+- **[Testing Strategy](./12-Testing-Strategy.md)** - Chiến lược kiểm thử (Unit, Integration, E2E)
 - **[Code Standards](./10-Code-Standards.md)** - Tiêu chuẩn code
 
 ### 5. Deployment & Operations
