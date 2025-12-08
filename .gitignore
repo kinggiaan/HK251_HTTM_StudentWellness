@@ -68,6 +68,10 @@ Thumbs.db
 */.DS_Store
 **/.DS_Store
 
+*/coverage/
+
+*/.specstory/
+
 # IDE and editor files
 .vscode/
 .idea/
@@ -81,15 +85,6 @@ Thumbs.db
 *.sublime-workspace
 .cursorindexingignore
 */.cursorindexingignore
-
-# Database files
-*.sqlite
-*.sqlite3
-*.db
-*/*.sqlite
-*/*.sqlite3
-**/*.sqlite
-**/*.sqlite3
 
 # Cache directories
 .cache/
@@ -108,11 +103,6 @@ Thumbs.db
 .strapi-cloud.json
 **/.strapi/
 
-# Uploads and media
-uploads/
-**/uploads/
-public/uploads/
-**/public/uploads/
 
 # Documentation generation
 .specstory/
@@ -163,6 +153,5 @@ public/uploads/
 *.jks
 *.keystore
 
-# Data files
-data/*.tmp
-**/data/*.tmp
+# ML Service
+ml-service/public/dataset_model/*/model.pkl

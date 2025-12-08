@@ -26,10 +26,16 @@
 - Click **Create new entry**
 - Fill in the user's information form and **Save**
 
-### Open backend's document (For developer only):
-- After starting the backend, open browser and navigate to http://localhost:1337/admin
-- Login with account:
-  + **Email:** huynhducnham@gmail.com
-  + **Password:** Nham12345@@
-- On the sidebar, navigate to tab **Documentation**
-- Click **Open documentation**
+### Or use existed users with roles:
+- supervisor/12345678
+- engineer/12345678
+- consultant/12345678
+
+## 1. Machine Learning Service:
+
+### How to start the project:
+- Change directory to backend: `cd ./ml-service`
+- Create virtual python enviroment: `python -m venv venv`
+- Access the virtual python enviroment: `source ./venv/bin/activate`
+- Install the dependencies: `pip install -r requirements.txt`
+- Start the project (At port 8000): `python main.py`

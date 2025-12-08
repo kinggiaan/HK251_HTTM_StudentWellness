@@ -1,0 +1,19 @@
+{
+  "kind": "collectionType",
+  "collectionName": "presets",
+  "info": {
+    "singularName": "preset",
+    "pluralName": "presets",
+    "displayName": "Preset"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    }
+  }
+}

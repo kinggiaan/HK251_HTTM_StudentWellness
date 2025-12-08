@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+
+# Environment folders
+env/
+venv/
+.env/
+*.egg-info/
+dist/
+build/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# IDE/editor directories
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# OS generated files
+.DS_Store
+Thumbs.db
+

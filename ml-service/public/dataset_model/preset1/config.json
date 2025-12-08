@@ -1,0 +1,18 @@
+{
+  "features": [
+    "Gender",
+    "Age",
+    "Academic Pressure",
+    "CGPA",
+    "Study Satisfaction",
+    "Sleep Duration",
+    "Dietary Habits",
+    "Work/Study Hours",
+    "Financial Stress",
+    "Family History of Mental Illness"
+  ],
+  "test_size": 0.2,
+  "n_estimators": 500,
+  "max_depth": null,
+  "class_weight": "balanced"
+}

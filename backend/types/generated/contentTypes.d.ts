@@ -430,36 +430,28 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiModelModel extends Struct.CollectionTypeSchema {
-  collectionName: 'models';
+export interface ApiPresetPreset extends Struct.CollectionTypeSchema {
+  collectionName: 'presets';
   info: {
-    displayName: 'Model';
-    pluralName: 'models';
-    singularName: 'model';
+    displayName: 'Preset';
+    pluralName: 'presets';
+    singularName: 'preset';
   };
   options: {
     draftAndPublish: false;
   };
   attributes: {
-    accuracy: Schema.Attribute.Decimal;
-    additional_parameters: Schema.Attribute.JSON;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    dataset: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
-    dataset_charts: Schema.Attribute.Media<
-      'images' | 'files' | 'videos' | 'audios',
-      true
-    >;
-    dataset_importances: Schema.Attribute.JSON;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<'oneToMany', 'api::model.model'> &
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::preset.preset'
+    > &
       Schema.Attribute.Private;
-    name: Schema.Attribute.String;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
-    selected_features: Schema.Attribute.JSON;
-    train_set_ratio: Schema.Attribute.Decimal;
-    umap: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -477,23 +469,20 @@ export interface ApiStudentStudent extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
+    academic_pressure: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     age: Schema.Attribute.Integer;
     cgpa: Schema.Attribute.Decimal;
-    chronic_illness: Schema.Attribute.Enumeration<['No', 'Yes']>;
-    counseling_service_use: Schema.Attribute.Enumeration<
-      ['Never', 'Occasionally', 'Frequently']
-    >;
-    course: Schema.Attribute.String;
+    city: Schema.Attribute.String;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    diet_quality: Schema.Attribute.Enumeration<['Poor', 'Average', 'Good']>;
-    extracurricular_involvement: Schema.Attribute.Enumeration<
-      ['Low', 'Moderate', 'High']
-    >;
-    family_history: Schema.Attribute.Enumeration<['No', 'Yes']>;
+    degree: Schema.Attribute.String;
+    depression_predicting: Schema.Attribute.Integer;
+    depression_truth: Schema.Attribute.Integer;
+    dietary_habits: Schema.Attribute.String;
+    family_his_of_mental_illness: Schema.Attribute.String;
     financial_stress: Schema.Attribute.Integer;
-    gender: Schema.Attribute.Enumeration<['Male', 'Female']>;
+    gender: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -501,32 +490,14 @@ export interface ApiStudentStudent extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     name: Schema.Attribute.String;
-    physical_activity: Schema.Attribute.Enumeration<
-      ['Low', 'Moderate', 'High']
-    >;
-    pred_anxiety_score: Schema.Attribute.Integer;
-    pred_depression_score: Schema.Attribute.Integer;
-    pred_stress_level: Schema.Attribute.Integer;
     publishedAt: Schema.Attribute.DateTime;
-    relationship_status: Schema.Attribute.Enumeration<
-      ['Single', 'In a Relationship', 'Married']
-    >;
-    residence_type: Schema.Attribute.Enumeration<
-      ['Off-Campus', 'On-Campus', 'With Family']
-    >;
-    semester_credit_load: Schema.Attribute.Integer;
-    sleep_quality: Schema.Attribute.Enumeration<['Poor', 'Average', 'Good']>;
-    social_support: Schema.Attribute.Enumeration<['Low', 'Moderate', 'High']>;
-    substance_use: Schema.Attribute.Enumeration<
-      ['Never', 'Occasionally', 'Frequently']
-    >;
-    true_anxiety_score: Schema.Attribute.Integer;
-    true_depression_score: Schema.Attribute.Integer;
-    true_stress_level: Schema.Attribute.Integer;
+    sleep_duration: Schema.Attribute.String;
+    study_satisfaction: Schema.Attribute.Integer;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    validated: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    validated: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    work_study_hours: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
   };
 }
 
@@ -1040,7 +1011,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
-      'api::model.model': ApiModelModel;
+      'api::preset.preset': ApiPresetPreset;
       'api::student.student': ApiStudentStudent;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
