@@ -78,50 +78,75 @@ export interface UpdateStudentInput {
 
 export const studentsService = {
   async list(params?: ListStudentsParams): Promise<ListStudentsResponse> {
+    // Strapi uses pagination[page], pagination[pageSize] format
     const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.search) queryParams.append('search', params.search);
-    if (params?.status) queryParams.append('status', params.status);
-    if (params?.riskLevel) queryParams.append('riskLevel', params.riskLevel);
-    if (params?.consultantId) queryParams.append('consultantId', params.consultantId);
-    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
-    if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+    if (params?.page) queryParams.append('pagination[page]', params.page.toString());
+    if (params?.limit) queryParams.append('pagination[pageSize]', params.limit.toString());
+    
+    // Strapi uses filters[field][$contains] format for search
+    if (params?.search) {
+      queryParams.append('filters[name][$containsi]', params.search);
+    }
+    if (params?.status) queryParams.append('filters[status][$eq]', params.status);
+    if (params?.riskLevel) queryParams.append('filters[riskLevel][$eq]', params.riskLevel);
+    if (params?.consultantId) queryParams.append('filters[consultantId][$eq]', params.consultantId);
+    
+    // Strapi uses sort format: sort=field:asc or sort=field:desc
+    if (params?.sortBy) {
+      const order = params?.sortOrder || 'asc';
+      queryParams.append('sort', `${params.sortBy}:${order}`);
+    }
 
     const query = queryParams.toString();
-    const response = await apiClient.get<{ data: Student[]; pagination: any }>(`/students${query ? `?${query}` : ''}`);
+    const response = await apiClient.get<{ data: any[]; meta: { pagination: any } }>(`/api/students${query ? `?${query}` : ''}`);
     
-    // Handle case where response might be the full object or just the data
-    if (response && 'data' in response && 'pagination' in response) {
-      return response as ListStudentsResponse;
+    // Strapi returns { data: [], meta: { pagination: {...} } }
+    if (response && 'data' in response) {
+      const students = Array.isArray(response.data) ? response.data.map((item: any) => ({
+        id: item.id || item.documentId,
+        documentId: item.documentId,
+        ...item.attributes,
+        ...(typeof item !== 'object' || !item.attributes ? item : {})
+      })) : [];
+      
+      const pagination = response.meta?.pagination || {};
+      return {
+        data: students as Student[],
+        pagination: {
+          page: pagination.page || params?.page || 1,
+          limit: pagination.pageSize || params?.limit || 50,
+          total: pagination.total || students.length,
+          totalPages: pagination.pageCount || 1
+        }
+      };
     }
     
-    // Fallback: if response is just an array, wrap it
+    // Fallback
     return {
-      data: Array.isArray(response) ? response : [],
+      data: [],
       pagination: {
         page: params?.page || 1,
         limit: params?.limit || 50,
-        total: Array.isArray(response) ? response.length : 0,
+        total: 0,
         totalPages: 1
       }
     };
   },
 
   async getById(id: string): Promise<Student> {
-    return apiClient.get<Student>(`/students/${id}`);
+    return apiClient.get<Student>(`/api/students/${id}`);
   },
 
   async create(input: CreateStudentInput): Promise<Student> {
-    return apiClient.post<Student>('/students', input);
+    return apiClient.post<Student>('/api/students', input);
   },
 
   async update(id: string, input: UpdateStudentInput): Promise<Student> {
-    return apiClient.patch<Student>(`/students/${id}`, input);
+    return apiClient.patch<Student>(`/api/students/${id}`, input);
   },
 
   async delete(id: string): Promise<void> {
-    return apiClient.delete(`/students/${id}`);
+    return apiClient.delete(`/api/students/${id}`);
   }
 };
 

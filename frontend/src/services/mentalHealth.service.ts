@@ -61,13 +61,15 @@ export const mentalHealthService = {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
 
     const query = queryParams.toString();
-    return apiClient.get<MentalHealthRecord[]>(
-      `/students/${studentId}/health-records${query ? `?${query}` : ''}`
+    const response = await apiClient.get<{ data: MentalHealthRecord[]; pagination: any }>(
+      `/api/students/${studentId}/health-records${query ? `?${query}` : ''}`
     );
+    // Handle response format if needed, similar to students service
+    return Array.isArray(response) ? response : (response.data || []);
   },
 
   async getById(id: string): Promise<MentalHealthRecord> {
-    return apiClient.get<MentalHealthRecord>(`/health-records/${id}`);
+    return apiClient.get<MentalHealthRecord>(`/api/health-records/${id}`);
   },
 
   async create(
@@ -75,7 +77,7 @@ export const mentalHealthService = {
     input: CreateHealthRecordInput
   ): Promise<MentalHealthRecord> {
     return apiClient.post<MentalHealthRecord>(
-      `/students/${studentId}/health-records`,
+      `/api/students/${studentId}/health-records`,
       input
     );
   },
@@ -84,11 +86,11 @@ export const mentalHealthService = {
     id: string,
     input: UpdateHealthRecordInput
   ): Promise<MentalHealthRecord> {
-    return apiClient.patch<MentalHealthRecord>(`/health-records/${id}`, input);
+    return apiClient.patch<MentalHealthRecord>(`/api/health-records/${id}`, input);
   },
 
   async delete(id: string): Promise<void> {
-    return apiClient.delete(`/health-records/${id}`);
+    return apiClient.delete(`/api/health-records/${id}`);
   }
 };
 

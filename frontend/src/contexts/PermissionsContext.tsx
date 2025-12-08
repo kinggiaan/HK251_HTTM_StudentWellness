@@ -45,9 +45,11 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
   const reload = async () => {
     try {
       setIsLoading(true);
-      const data = await apiClient.get<{ permissions?: PermissionMatrix }>("/admin/permissions");
-      const permissions = (data as any)?.permissions ?? data;
-      if (permissions) setMatrix((prev) => ({ ...prev, ...permissions }));
+      // Permissions are role-based on frontend, no backend call needed
+      // If backend permissions are implemented later, use: /api/permissions
+      // const data = await apiClient.get<{ permissions?: PermissionMatrix }>("/api/permissions");
+      // const permissions = (data as any)?.permissions ?? data;
+      // if (permissions) setMatrix((prev) => ({ ...prev, ...permissions }));
     } finally {
       setIsLoading(false);
     }
