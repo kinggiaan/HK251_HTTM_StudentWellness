@@ -45,7 +45,11 @@ export function useTableColumns(initialColumns?: TableColumn[]) {
           return parsed;
         }
       }
-    } catch {}
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Failed to load columns from localStorage:', error);
+      }
+    }
 
     // Use provided or default
     return initialColumns || DEFAULT_COLUMNS;
@@ -55,7 +59,11 @@ export function useTableColumns(initialColumns?: TableColumn[]) {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(columns));
-    } catch {}
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Failed to save columns to localStorage:', error);
+      }
+    }
   }, [columns]);
 
   const visibleColumns = useMemo(() => {
@@ -79,7 +87,20 @@ export function useTableColumns(initialColumns?: TableColumn[]) {
   };
 
   const hideAllColumns = () => {
-    setColumns(prev => prev.map(col => ({ ...col, visible: false })));
+    setColumns(prev => {
+      // Prevent hiding all columns: keep at least one visible
+      const visibleCount = prev.filter(col => col.visible).length;
+      if (visibleCount <= 1 || prev.length === 0) {
+        // Do nothing if only one or zero columns are visible, or array is empty
+        return prev;
+      }
+      // Hide all columns except the first visible one
+      let firstVisibleIdx = prev.findIndex(col => col.visible);
+      if (firstVisibleIdx === -1) firstVisibleIdx = 0;
+      return prev.map((col, idx) =>
+        idx === firstVisibleIdx ? { ...col, visible: true } : { ...col, visible: false }
+      );
+    });
   };
 
   return {

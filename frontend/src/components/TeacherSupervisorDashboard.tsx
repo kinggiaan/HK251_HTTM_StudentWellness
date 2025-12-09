@@ -289,8 +289,8 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
 
   // Helper function to get cell value by column key
   const getCellValue = (record: MentalHealthRecord, key: string): string | number => {
-    const recordAny = record as any;
-    return recordAny[key] ?? '';
+    // Use keyof type assertion which is safer than 'as any'
+    return record[key as keyof MentalHealthRecord] ?? '';
   };
 
   const totalPages = Math.ceil(sortedRecords.length / itemsPerPage);
@@ -381,7 +381,7 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                   }}
                   placeholder="Search......"
                   aria-label="Search students by name or course"
-                  className="flex-1 bg-transparent border-none outline-none text-[11.507px] font-['Poppins:Medium',sans-serif] text-[#495d72] placeholder:text-[rgba(73,93,114,0.6)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
+                  className="flex-1 bg-transparent border-none text-[11.507px] font-['Poppins:Medium',sans-serif] text-[#495d72] placeholder:text-[rgba(73,93,114,0.6)] focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
                 />
                 <div className="relative shrink-0 size-[16px]">
                   <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
@@ -459,7 +459,6 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                     record={record}
                     onSelect={(r) => {
                       // Navigate to detail page or show modal
-                      console.log('Selected:', r);
                     }}
                   />
                 ))}
@@ -531,7 +530,8 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            // Handle row selection
+                            // TODO: Navigate to student detail page
+                            // Example: navigate(`/student/${record.id}`);
                           }
                         }}
                       >

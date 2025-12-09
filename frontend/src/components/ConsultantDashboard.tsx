@@ -11,7 +11,7 @@ import { useTableSort } from "../hooks/useTableSort";
 import { ColumnSelector } from "./ColumnSelector";
 import { StudentTableCard } from "./StudentTableCard";
 import { SortIcon } from "./SortIcon";
-import { Users, Search as SearchIcon, FileText } from "lucide-react";
+import { Users, Search as SearchIcon } from "lucide-react";
 import svgPaths from "../imports/svg-695504e5jy";
 import img from "figma:asset/b84a227f158a096d5fb31a5a5f2dd6c595e78767.png";
 import { imgGroup } from "../imports/svg-tct91";
@@ -257,8 +257,8 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
 
   // Helper function to get cell value by column key
   const getCellValue = (record: MentalHealthRecord, key: string): string | number => {
-    const recordAny = record as any;
-    return recordAny[key] ?? '';
+    // Use keyof type assertion which is safer than 'as any'
+    return record[key as keyof MentalHealthRecord] ?? '';
   };
 
   return (
@@ -396,7 +396,6 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
                       record={record}
                       onSelect={(r) => {
                         // Navigate to detail page or show modal
-                        console.log('Selected:', r);
                       }}
                     />
                   ))}
