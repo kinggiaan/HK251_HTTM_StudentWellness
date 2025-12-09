@@ -288,11 +288,9 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
   };
 
   // Helper function to get cell value by column key
-  const getCellValue = <K extends keyof MentalHealthRecord>(
-    record: MentalHealthRecord,
-    key: K
-  ): MentalHealthRecord[K] | '' => {
-    return record[key] ?? '';
+  const getCellValue = (record: MentalHealthRecord, key: string): string | number => {
+    // Use keyof type assertion which is safer than 'as any'
+    return record[key as keyof MentalHealthRecord] ?? '';
   };
 
   const totalPages = Math.ceil(sortedRecords.length / itemsPerPage);
