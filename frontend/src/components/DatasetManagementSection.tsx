@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { listDatasets, uploadDataset } from "../services/datasets";
 import { toast } from "sonner";
+import { BarChart3, CheckCircle2, FlaskConical, Calendar } from "lucide-react";
 import correlationMatrix from "figma:asset/9cd4c173c374f15abc2fa955af96ccd62c5e6093.png";
 
 export function DatasetManagement() {
@@ -75,7 +76,7 @@ export function DatasetManagement() {
         <div className="grid grid-cols-4 gap-5">
           <div className="bg-white rounded-lg p-6 border-l-4 border-blue-500 shadow-md hover:shadow-xl transition-all duration-300">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-3xl">📊</span>
+              <BarChart3 className="w-8 h-8 text-blue-600" aria-hidden="true" />
               <p className="font-bold text-blue-900 text-xs uppercase">Total Samples</p>
             </div>
             <p className="font-black text-blue-700 text-5xl mb-2">{totalSamples}</p>
@@ -87,7 +88,7 @@ export function DatasetManagement() {
 
           <div className="bg-white rounded-lg p-6 border-l-4 border-green-500 shadow-md hover:shadow-xl transition-all duration-300">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-3xl">✅</span>
+              <CheckCircle2 className="w-8 h-8 text-green-600" aria-hidden="true" />
               <p className="font-bold text-green-900 text-xs uppercase">Training Set</p>
             </div>
             <p className="font-black text-green-700 text-5xl mb-2">{Math.floor(totalSamples * 0.8)}</p>
@@ -96,7 +97,7 @@ export function DatasetManagement() {
 
           <div className="bg-white rounded-lg p-6 border-l-4 border-orange-500 shadow-md hover:shadow-xl transition-all duration-300">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-3xl">🧪</span>
+              <FlaskConical className="w-8 h-8 text-orange-600" aria-hidden="true" />
               <p className="font-bold text-orange-900 text-xs uppercase">Testing Set</p>
             </div>
             <p className="font-black text-orange-700 text-5xl mb-2">{Math.floor(totalSamples * 0.2)}</p>
@@ -105,7 +106,7 @@ export function DatasetManagement() {
 
           <div className="bg-white rounded-lg p-6 border-l-4 border-purple-500 shadow-md hover:shadow-xl transition-all duration-300">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-3xl">📅</span>
+              <Calendar className="w-8 h-8 text-purple-600" aria-hidden="true" />
               <p className="font-bold text-purple-900 text-xs uppercase">Last Update</p>
             </div>
             <p className="font-black text-purple-700 text-3xl mb-2">Nov 13</p>
@@ -116,7 +117,7 @@ export function DatasetManagement() {
         {/* Dataset Split Visualization */}
         <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200 hover:shadow-lg transition-all duration-300">
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">📊</span>
+            <BarChart3 className="w-5 h-5 text-gray-700" aria-hidden="true" />
             <p className="font-['Poppins:Bold',sans-serif] text-gray-900 text-base">Data Split Ratio</p>
           </div>
           

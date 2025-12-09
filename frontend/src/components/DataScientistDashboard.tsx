@@ -13,6 +13,7 @@ import { DatasetManagement } from "./DatasetManagementSection";
 import { listModels, createModel, trainModel, deployModel, type MLModel } from "../services/mlModels";
 import { listDatasets } from "../services/datasets";
 import { toast } from "sonner";
+import { Users, AlertCircle, AlertTriangle, CheckCircle2, BarChart3, Target, Check, Search, Scale, Info, TrendingUp, Bot, Eye, Download, Trash2, Clock, FileText } from "lucide-react";
 
 interface DataScientistDashboardProps {
   onLogout: () => void;
@@ -262,7 +263,11 @@ function ModelSettings() {
   );
 }
 
-function AnalyticsDashboard() {
+interface AnalyticsDashboardProps {
+  latestTrained?: MLModel | null;
+}
+
+function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState<"basic" | "mental" | "lifestyle" | "background" | "academic">("basic");
@@ -351,7 +356,7 @@ function AnalyticsDashboard() {
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-5 border-2 border-blue-200 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
-            <div className="text-2xl">👥</div>
+            <Users className="w-6 h-6 text-blue-700" aria-hidden="true" />
             <div className="text-xs font-['Poppins:Medium',sans-serif] text-blue-700">Total Students</div>
           </div>
           <div className="text-3xl font-['Poppins:Bold',sans-serif] text-blue-900">{totalStudents}</div>
@@ -360,7 +365,7 @@ function AnalyticsDashboard() {
 
         <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-5 border-2 border-red-200 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
-            <div className="text-2xl">🔴</div>
+            <AlertCircle className="w-6 h-6 text-red-700" aria-hidden="true" />
             <div className="text-xs font-['Poppins:Medium',sans-serif] text-red-700">High Risk</div>
           </div>
           <div className="text-3xl font-['Poppins:Bold',sans-serif] text-red-900">{highRisk}</div>
@@ -369,7 +374,7 @@ function AnalyticsDashboard() {
 
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-5 border-2 border-orange-200 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
-            <div className="text-2xl">🟡</div>
+            <AlertTriangle className="w-6 h-6 text-orange-700" aria-hidden="true" />
             <div className="text-xs font-['Poppins:Medium',sans-serif] text-orange-700">Moderate Risk</div>
           </div>
           <div className="text-3xl font-['Poppins:Bold',sans-serif] text-orange-900">{moderateRisk}</div>
@@ -378,7 +383,7 @@ function AnalyticsDashboard() {
 
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-5 border-2 border-green-200 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
-            <div className="text-2xl">🟢</div>
+            <CheckCircle2 className="w-6 h-6 text-green-700" aria-hidden="true" />
             <div className="text-xs font-['Poppins:Medium',sans-serif] text-green-700">Low Risk</div>
           </div>
           <div className="text-3xl font-['Poppins:Bold',sans-serif] text-green-900">{lowRisk}</div>
@@ -391,7 +396,7 @@ function AnalyticsDashboard() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-              <span className="text-3xl">📊</span>
+              <BarChart3 className="w-7 h-7 text-white" aria-hidden="true" />
             </div>
             <div>
               <h2 className="text-3xl font-black text-gray-900">Model Performance</h2>
@@ -405,7 +410,7 @@ function AnalyticsDashboard() {
           {/* Accuracy Card */}
           <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border-2 border-blue-200 hover:border-blue-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
             <div className="absolute top-4 right-4 w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
-              <span className="text-3xl">🎯</span>
+              <Target className="w-6 h-6 text-blue-600" aria-hidden="true" />
             </div>
             <div className="mb-4">
               <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2">Accuracy</p>
@@ -428,7 +433,7 @@ function AnalyticsDashboard() {
           {/* Precision Card */}
           <div className="group relative bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border-2 border-purple-200 hover:border-purple-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
             <div className="absolute top-4 right-4 w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
-              <span className="text-3xl">✓</span>
+              <Check className="w-6 h-6 text-purple-600" aria-hidden="true" />
             </div>
             <div className="mb-4">
               <p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-2">Precision</p>
@@ -451,7 +456,7 @@ function AnalyticsDashboard() {
           {/* Recall Card */}
           <div className="group relative bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border-2 border-green-200 hover:border-green-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
             <div className="absolute top-4 right-4 w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
-              <span className="text-3xl">🔍</span>
+              <Search className="w-6 h-6 text-green-600" aria-hidden="true" />
             </div>
             <div className="mb-4">
               <p className="text-xs font-bold text-green-600 uppercase tracking-widest mb-2">Recall</p>
@@ -474,7 +479,7 @@ function AnalyticsDashboard() {
           {/* F1 Score Card */}
           <div className="group relative bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6 border-2 border-orange-200 hover:border-orange-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
             <div className="absolute top-4 right-4 w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
-              <span className="text-3xl">⚖️</span>
+              <Scale className="w-6 h-6 text-orange-600" aria-hidden="true" />
             </div>
             <div className="mb-4">
               <p className="text-xs font-bold text-orange-600 uppercase tracking-widest mb-2">F1 Score</p>
@@ -714,12 +719,27 @@ function AnalyticsDashboard() {
                       <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.age}</td>
                       <td className="py-[12px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.course}</td>
                       <td className="py-[12px] px-[12px] text-center">
-                        <span className={`font-['Poppins:Bold',sans-serif] text-[12px] px-[12px] py-[4px] rounded-full ${
+                        <span className={`font-['Poppins:Bold',sans-serif] text-[12px] px-[12px] py-[4px] rounded-full flex items-center gap-1 ${
                           student.riskLevel === "High" ? "bg-red-100 text-red-700 border border-red-300" :
                           student.riskLevel === "Medium" ? "bg-orange-100 text-orange-700 border border-orange-300" :
                           "bg-green-100 text-green-700 border border-green-300"
                         }`}>
-                          {student.riskLevel === "High" ? "🔴 High" : student.riskLevel === "Medium" ? "🟡 Moderate" : "🟢 Low"}
+                          {student.riskLevel === "High" ? (
+                            <>
+                              <AlertCircle className="w-3 h-3" aria-hidden="true" />
+                              <span>High</span>
+                            </>
+                          ) : student.riskLevel === "Medium" ? (
+                            <>
+                              <AlertTriangle className="w-3 h-3" aria-hidden="true" />
+                              <span>Moderate</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                              <span>Low</span>
+                            </>
+                          )}
                         </span>
                       </td>
                     </tr>
@@ -850,7 +870,7 @@ function AnalyticsDashboard() {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-[16px] pt-[16px] border-t border-[#e5e5e5] bg-gradient-to-r from-gray-50/50 to-white px-4 py-3 rounded-lg">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-lg font-['Poppins:Bold',sans-serif] text-[11px]">📄</span>
+                        <FileText className="w-3 h-3 text-indigo-700" aria-hidden="true" />
               <p className="font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px]">
                 Showing <span className="font-['Poppins:Bold',sans-serif] text-gray-900">{startIndex + 1}-{Math.min(startIndex + studentsPerPage, filteredStudents.length)}</span> of <span className="font-['Poppins:Bold',sans-serif] text-gray-900">{filteredStudents.length}</span> students
               </p>
@@ -922,7 +942,13 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
       const res = await listModels({ page: 1, limit: 20, order: "desc", sortBy: "updatedAt" });
       setModels(res.items ?? []);
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to load models");
+      // Silently handle errors - show toast only if it's not a 404/500 (expected when backend is not ready)
+      const status = e?.response?.status;
+      if (status && status !== 404 && status !== 500) {
+        toast.error(e?.message ?? "Failed to load models");
+      }
+      // Set empty array on error to prevent undefined issues
+      setModels([]);
     } finally {
       setIsLoadingModels(false);
     }
@@ -988,8 +1014,18 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
         toast.error("Selected configuration not found. Please save again.");
         return;
       }
-      const dsList = await listDatasets({ page: 1, limit: 1, order: "desc", sortBy: "uploadedAt" });
-      const latestDataset = dsList.items?.[0];
+      let latestDataset;
+      try {
+        const dsList = await listDatasets({ page: 1, limit: 1, order: "desc", sortBy: "uploadedAt" });
+        latestDataset = dsList.items?.[0];
+      } catch (e: any) {
+        // Handle API errors gracefully
+        const status = e?.response?.status;
+        if (status && status !== 404 && status !== 500) {
+          toast.error(e?.message ?? "Failed to load datasets");
+        }
+        latestDataset = null;
+      }
       if (!latestDataset) {
         toast.error("No dataset available. Please upload a dataset first.");
         return;
@@ -1110,14 +1146,9 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
             </div>
           </div>
 
-          {/* Content - Single scrollable page with gradient background */}
+          {/* Content - Single scrollable page with static gradient background */}
           <div 
-            className="px-8 py-6 space-y-8 pb-24 min-h-screen"
-            style={{
-              background: 'linear-gradient(135deg, #f0f9ff 0%, #f5f3ff 25%, #fef3c7 50%, #fce7f3 75%, #f0f9ff 100%)',
-              backgroundSize: '400% 400%',
-              animation: 'gradient 15s ease infinite'
-            }}
+            className="px-8 py-6 space-y-8 pb-24 min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50"
           >
             
             {/* Model Overview Section - COMPLETELY REDESIGNED */}
@@ -1125,7 +1156,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-                    <span className="text-3xl">📊</span>
+                    <BarChart3 className="w-7 h-7 text-white" aria-hidden="true" />
                   </div>
                   <div>
                     <h2 className="text-3xl font-black text-gray-900">Model Performance</h2>
@@ -1139,7 +1170,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                 {/* Accuracy Card */}
                 <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border-2 border-blue-200 hover:border-blue-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
                   <div className="absolute top-4 right-4 w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
-                    <span className="text-3xl">🎯</span>
+                    <Target className="w-6 h-6 text-blue-600" aria-hidden="true" />
                   </div>
                   <div className="mb-4">
                     <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2">Accuracy</p>
@@ -1162,7 +1193,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                 {/* Precision Card */}
                 <div className="group relative bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border-2 border-purple-200 hover:border-purple-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
                   <div className="absolute top-4 right-4 w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
-                    <span className="text-3xl">✓</span>
+                    <Check className="w-6 h-6 text-purple-600" aria-hidden="true" />
                   </div>
                   <div className="mb-4">
                     <p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-2">Precision</p>
@@ -1185,7 +1216,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                 {/* Recall Card */}
                 <div className="group relative bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border-2 border-green-200 hover:border-green-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
                   <div className="absolute top-4 right-4 w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
-                    <span className="text-3xl">🔍</span>
+                    <Search className="w-6 h-6 text-green-600" aria-hidden="true" />
                   </div>
                   <div className="mb-4">
                     <p className="text-xs font-bold text-green-600 uppercase tracking-widest mb-2">Recall</p>
@@ -1208,7 +1239,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                 {/* F1 Score Card */}
                 <div className="group relative bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6 border-2 border-orange-200 hover:border-orange-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
                   <div className="absolute top-4 right-4 w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
-                    <span className="text-3xl">⚖️</span>
+                    <Scale className="w-6 h-6 text-orange-600" aria-hidden="true" />
                   </div>
                   <div className="mb-4">
                     <p className="text-xs font-bold text-orange-600 uppercase tracking-widest mb-2">F1 Score</p>
@@ -1233,7 +1264,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
               {latestTrained && (
                 <div className="mt-8 bg-white border-2 border-gray-400 rounded-lg p-6 shadow-lg">
                   <div className="flex items-center gap-2 mb-5">
-                    <span className="text-2xl">ℹ️</span>
+                    <Info className="w-6 h-6 text-gray-600" aria-hidden="true" />
                     <h3 className="text-xl font-bold text-gray-900">Latest Model Information</h3>
                   </div>
                   <div className="grid grid-cols-5 gap-4">
@@ -1312,7 +1343,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                           }}
                           className="w-full bg-white border-2 border-gray-300 rounded-xl px-4 py-3 text-base font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400 transition-all"
                         >
-                          <option value="">🔍 Select a configuration...</option>
+                          <option value="">Select a configuration...</option>
                           {configs.map(c => (
                             <option key={c.configName} value={c.configName} className="font-semibold">{c.configName}</option>
                           ))}
@@ -1380,9 +1411,9 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                         <div>
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-                                <span className="text-2xl">🎯</span>
-                              </div>
+                            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                              <Target className="w-5 h-5 text-indigo-600" aria-hidden="true" />
+                            </div>
                               <h3 className="text-2xl font-black text-gray-900">Selected Features</h3>
                             </div>
                             <span className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-full">
@@ -1427,7 +1458,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
             <section className="animate-in fade-in duration-700" style={{ animationDelay: '200ms' }}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-teal-600 shadow-lg">
-                  <span className="text-2xl">📈</span>
+                  <TrendingUp className="w-5 h-5 text-white" aria-hidden="true" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-['Poppins:Bold',sans-serif] text-gray-900">
@@ -1445,7 +1476,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-3">
-                            <span className="text-lg">🤖</span>
+                            <Bot className="w-5 h-5 text-gray-600" aria-hidden="true" />
                             <h3 className="font-bold text-gray-900 text-base">{model.modelName}</h3>
                             <span className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
                               model.status === 'deployed' ? 'bg-green-100 text-green-700 border border-green-300' :
@@ -1465,13 +1496,15 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                           <div className="grid grid-cols-4 gap-3 text-sm">
                             {model.accuracy && (
                               <div className="flex items-center gap-2">
-                                <span className="text-gray-500 text-xs">📊 Accuracy:</span>
+                                <BarChart3 className="w-3 h-3 text-gray-500" aria-hidden="true" />
+                                <span className="text-gray-500 text-xs">Accuracy:</span>
                                 <span className="font-bold text-blue-600">{(model.accuracy * 100).toFixed(1)}%</span>
                               </div>
                             )}
                             {model.precision && (
                               <div className="flex items-center gap-2">
-                                <span className="text-gray-500 text-xs">🎯 Precision:</span>
+                                <Target className="w-3 h-3 text-gray-500" aria-hidden="true" />
+                                <span className="text-gray-500 text-xs">Precision:</span>
                                 <span className="font-bold text-purple-600">{(model.precision * 100).toFixed(1)}%</span>
                               </div>
                             )}
@@ -1489,7 +1522,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                             )}
                           </div>
                           <p className="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
-                            <span>🕒</span>
+                            <Clock className="w-3 h-3" aria-hidden="true" />
                             <span>Trained: {new Date(model.updatedAt || model.createdAt).toLocaleString('en-US', { 
                               month: 'short', 
                               day: 'numeric', 
@@ -1500,18 +1533,27 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                           </p>
                         </div>
                         <div className="flex gap-2 ml-4">
-                          <button className="px-4 py-2 text-xs bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-semibold shadow-sm hover:shadow-md flex items-center gap-1.5">
-                            <span>👁️</span>
+                          <button 
+                            aria-label={`View details for model ${model.modelName}`}
+                            className="px-4 py-2 text-xs bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-semibold shadow-sm hover:shadow-md flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          >
+                            <Eye className="w-3 h-3" aria-hidden="true" />
                             <span>View</span>
                           </button>
                           {model.status === 'deployed' && (
-                            <button className="px-4 py-2 text-xs bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 font-semibold shadow-sm hover:shadow-md flex items-center gap-1.5">
-                              <span>📥</span>
+                            <button 
+                              aria-label={`Download model ${model.modelName}`}
+                              className="px-4 py-2 text-xs bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 font-semibold shadow-sm hover:shadow-md flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                            >
+                              <Download className="w-3 h-3" aria-hidden="true" />
                               <span>Download</span>
                             </button>
                           )}
-                          <button className="px-4 py-2 text-xs border-2 border-red-200 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all duration-200 font-semibold flex items-center gap-1.5">
-                            <span>🗑️</span>
+                          <button 
+                            aria-label={`Delete model ${model.modelName}`}
+                            className="px-4 py-2 text-xs border-2 border-red-200 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all duration-200 font-semibold flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                          >
+                            <Trash2 className="w-3 h-3" aria-hidden="true" />
                             <span>Delete</span>
                           </button>
                         </div>
@@ -1521,10 +1563,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <svg className="w-16 h-16 text-blue-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
+                  <Bot className="w-16 h-16 text-blue-500 mx-auto mb-3" aria-hidden="true" />
                   <p className="text-gray-600 font-medium">No training history yet</p>
                   <p className="text-sm text-gray-500 mt-2">Train your first model to see results here</p>
                 </div>
@@ -1563,7 +1602,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
 
           {/* Analytics Content */}
           <div className="bg-gray-50 min-h-screen">
-            <AnalyticsDashboard />
+            <AnalyticsDashboard latestTrained={latestTrained} />
           </div>
         </div>
       ) : null}

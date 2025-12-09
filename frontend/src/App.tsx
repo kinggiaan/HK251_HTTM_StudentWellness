@@ -4,7 +4,6 @@ import { LoginPage } from "./components/LoginPage";
 import { ConsultantDashboard } from "./components/ConsultantDashboard";
 import { TeacherSupervisorDashboard } from "./components/TeacherSupervisorDashboard";
 import { DataScientistDashboard } from "./components/DataScientistDashboard";
-import { AdminConsole } from "./components/AdminConsole";
 import { Toaster } from "./components/ui/sonner";
 import { PermissionsProvider } from "./contexts/PermissionsContext";
 
@@ -73,15 +72,6 @@ export default function App() {
     );
   }
 
-  // Hidden Admin Console (developer-only; no public navigation)
-  if (frontendRole === "admin") {
-    return (
-      <PermissionsProvider>
-        <AdminConsole />
-        <Toaster />
-      </PermissionsProvider>
-    );
-  }
 
   // Default fallback (should never reach here)
   return (
