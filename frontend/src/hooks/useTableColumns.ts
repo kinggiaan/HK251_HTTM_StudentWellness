@@ -90,11 +90,11 @@ export function useTableColumns(initialColumns?: TableColumn[]) {
     setColumns(prev => {
       // Prevent hiding all columns: keep at least one visible
       const visibleCount = prev.filter(col => col.visible).length;
-      if (visibleCount <= 1) {
-        // Do nothing if only one or zero columns are visible
+      if (visibleCount <= 1 || prev.length === 0) {
+        // Do nothing if only one or zero columns are visible, or array is empty
         return prev;
       }
-      // Otherwise, hide all columns except the first one
+      // Hide all columns except the first visible one
       let firstVisibleIdx = prev.findIndex(col => col.visible);
       if (firstVisibleIdx === -1) firstVisibleIdx = 0;
       return prev.map((col, idx) =>
