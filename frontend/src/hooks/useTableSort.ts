@@ -7,15 +7,15 @@ export interface SortConfig {
   direction: 'asc' | 'desc';
 }
 
-export function useTableSort<T>(data: T[]) {
+export function useTableSort<T extends Record<string, any>>(data: T[]) {
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
 
   const sortedData = useMemo(() => {
     if (!sortConfig) return data;
 
     return [...data].sort((a, b) => {
-      const aValue = (a as any)[sortConfig.key];
-      const bValue = (b as any)[sortConfig.key];
+      const aValue = a[sortConfig.key as keyof T];
+      const bValue = b[sortConfig.key as keyof T];
 
       // Handle null/undefined
       if (aValue == null && bValue == null) return 0;

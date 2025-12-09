@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface UseTableKeyboardOptions {
   rowCount: number;
@@ -20,6 +20,21 @@ export function useTableKeyboard({
   const [focusedRow, setFocusedRow] = useState<number | null>(null);
   const [focusedCol, setFocusedCol] = useState<number | null>(null);
   const tableRef = useRef<HTMLTableElement>(null);
+
+  const focusCell = useCallback((row: number, col: number) => {
+    const tbody = tableRef.current?.querySelector('tbody');
+    if (!tbody) return;
+
+    const rows = tbody.querySelectorAll('tr');
+    const targetRow = rows[row];
+    if (!targetRow) return;
+
+    const cells = targetRow.querySelectorAll('td');
+    const targetCell = cells[col];
+    if (targetCell) {
+      (targetCell as HTMLElement).focus();
+    }
+  }, []);
 
   useEffect(() => {
     if (!enabled || !tableRef.current) return;
@@ -94,26 +109,11 @@ export function useTableKeyboard({
       }
     };
 
-    const focusCell = (row: number, col: number) => {
-      const tbody = tableRef.current?.querySelector('tbody');
-      if (!tbody) return;
-
-      const rows = tbody.querySelectorAll('tr');
-      const targetRow = rows[row];
-      if (!targetRow) return;
-
-      const cells = targetRow.querySelectorAll('td');
-      const targetCell = cells[col];
-      if (targetCell) {
-        (targetCell as HTMLElement).focus();
-      }
-    };
-
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [enabled, rowCount, columnCount, focusedRow, focusedCol, onRowSelect]);
+  }, [enabled, rowCount, columnCount, focusedRow, focusedCol, onRowSelect, focusCell]);
 
   return {
     tableRef,
