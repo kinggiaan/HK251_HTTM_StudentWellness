@@ -37,16 +37,23 @@ export interface ListModelsParams {
 export async function listModels(params: ListModelsParams = {}): Promise<{ items: MLModel[]; total: number; page: number; limit: number; }> {
   try {
     const presets = await mlService.listPresets();
+    
+    // Handle empty or invalid response
+    if (!Array.isArray(presets)) {
+      console.warn("ML Service returned non-array response:", presets);
+      return { items: [], total: 0, page: 1, limit: 100 };
+    }
+    
     // Map presets to MLModel structure
     // Note: The backend API has changed to "Presets" instead of "Models"
     // We map the new structure to the old one to keep the UI working
-    const items: MLModel[] = (Array.isArray(presets) ? presets : []).map((p: any) => ({
+    const items: MLModel[] = presets.map((p: any) => ({
       id: p.name || p.preset_name || 'unknown',
       modelName: p.name || p.preset_name || 'Unknown Preset',
-      modelType: 'classification', // Default assumption
+      modelType: 'classification' as const, // Default assumption
       version: '1.0.0',
       algorithm: 'Random Forest', // Default assumption
-      status: 'trained', // Default assumption
+      status: 'trained' as const, // Default assumption
       isActive: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -59,8 +66,9 @@ export async function listModels(params: ListModelsParams = {}): Promise<{ items
       page: 1,
       limit: 100,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to list models/presets:", error);
+    // Return empty array on error to prevent undefined issues
     return { items: [], total: 0, page: 1, limit: 20 };
   }
 }

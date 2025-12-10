@@ -10,10 +10,15 @@ import { extendedMockStudents } from "../data/mockStudentsExtended";
 import { MentalHealthRecord, mockMentalHealthRecords } from "../data/mockMentalHealth";
 import { dataScientistNotifications } from "../data/mockNotificationsByRole";
 import { DatasetManagement } from "./DatasetManagementSection";
-import { listModels, createModel, trainModel, deployModel, type MLModel } from "../services/mlModels";
 import { listDatasets } from "../services/datasets";
 import { toast } from "sonner";
-import { Users, AlertCircle, AlertTriangle, CheckCircle2, BarChart3, Target, Check, Search, Scale, Info, TrendingUp, Bot, Eye, Download, Trash2, Clock, FileText } from "lucide-react";
+import { Users, AlertCircle, AlertTriangle, CheckCircle2, BarChart3, Target, Check, Search, Scale, Info, TrendingUp, Bot, Eye, Download, Trash2, Clock, FileText, Settings } from "lucide-react";
+import { mlService, type MLPreset, type MLPerformance, type MLConfig } from "../services/ml.service";
+import { CreatePresetDialog } from "./CreatePresetDialog";
+import { EditPresetConfigDialog } from "./EditPresetConfigDialog";
+import { PresetCard } from "./PresetCard";
+import { DatasetAnalysis } from "./DatasetAnalysis";
+import { PlotsGallery } from "./PlotsGallery";
 
 interface DataScientistDashboardProps {
   onLogout: () => void;
@@ -264,7 +269,7 @@ function ModelSettings() {
 }
 
 interface AnalyticsDashboardProps {
-  latestTrained?: MLModel | null;
+  latestTrained?: MLPreset | null;
 }
 
 function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
@@ -908,8 +913,12 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [notifications, setNotifications] = useState(dataScientistNotifications);
   const { hasPermission } = usePermissions();
-  const [models, setModels] = useState<MLModel[]>([]);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [presets, setPresets] = useState<MLPreset[]>([]);
+  const [isLoadingPresets, setIsLoadingPresets] = useState(false);
+  const [isCreatePresetOpen, setIsCreatePresetOpen] = useState(false);
+  const [isEditConfigOpen, setIsEditConfigOpen] = useState(false);
+  const [presetConfig, setPresetConfig] = useState<MLConfig | null>(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(false);
   type SavedConfig = {
     configName: string;
     trainTestRatio: number;
@@ -918,6 +927,10 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
   };
   const [configs, setConfigs] = useState<SavedConfig[]>([]);
   const [selectedConfigName, setSelectedConfigName] = useState<string | null>(null);
+  const [selectedPresetName, setSelectedPresetName] = useState<string | null>(null);
+  const [performance, setPerformance] = useState<MLPerformance | null>(null);
+  const [isLoadingPerformance, setIsLoadingPerformance] = useState(false);
+  const [presetStates, setPresetStates] = useState<Record<string, MLPresetState>>({});
   function openConfigDialog() {
     if (!hasPermission("mlModels.manage")) {
       toast.error("You do not have permission to manage ML models.");
@@ -936,30 +949,42 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  async function reloadModels() {
+  async function reloadPresets() {
     try {
-      setIsLoadingModels(true);
-      const res = await listModels({ page: 1, limit: 20, order: "desc", sortBy: "updatedAt" });
-      setModels(res.items ?? []);
+      setIsLoadingPresets(true);
+      const presetList = await mlService.listPresets();
+      console.log('[DataScientistDashboard] Loaded presets:', presetList);
+      setPresets(presetList);
     } catch (e: any) {
+      console.error('[DataScientistDashboard] Failed to load presets:', e);
       // Silently handle errors - show toast only if it's not a 404/500 (expected when backend is not ready)
       const status = e?.response?.status;
       if (status && status !== 404 && status !== 500) {
-        toast.error(e?.message ?? "Failed to load models");
+        toast.error(e?.message ?? "Failed to load presets");
       }
       // Set empty array on error to prevent undefined issues
-      setModels([]);
+      setPresets([]);
     } finally {
-      setIsLoadingModels(false);
+      setIsLoadingPresets(false);
     }
   }
 
   useEffect(() => {
     if (hasPermission("mlModels.manage")) {
-      reloadModels();
+      reloadPresets();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasPermission]);
+
+  // Auto-select first trained preset when presets load
+  useEffect(() => {
+    if (!Array.isArray(presets) || presets.length === 0) return;
+    if (selectedPresetName) return; // Don't override user selection
+    
+    // Try to select first trained preset, otherwise select first preset
+    const trained = presets.find(p => p.status === 'trained');
+    setSelectedPresetName(trained?.name ?? presets[0].name);
+  }, [presets, selectedPresetName]);
   useEffect(() => {
     try {
       const rawList = localStorage.getItem("ml:configs");
@@ -975,8 +1000,143 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
   }, []);
 
   const latestTrained = useMemo(() => {
-    return models.find(m => m.status === "deployed" || m.status === "trained") ?? models[0];
-  }, [models]);
+    // Ensure presets is an array before calling .find()
+    if (!Array.isArray(presets) || presets.length === 0) {
+      return null;
+    }
+    return presets.find(p => p.status === "trained") ?? presets[0];
+  }, [presets]);
+
+  // Load performance metrics when a preset is selected
+  useEffect(() => {
+    if (!selectedPresetName) {
+      setPerformance(null);
+      return;
+    }
+
+    let mounted = true;
+
+    const loadPerformance = async () => {
+      setIsLoadingPerformance(true);
+      try {
+        const perf = await mlService.getPerformance(selectedPresetName);
+        if (mounted) {
+          setPerformance(perf);
+        }
+      } catch (error) {
+        console.error('Failed to load performance:', error);
+        if (mounted) {
+          setPerformance(null);
+          toast.error('Failed to load performance metrics');
+        }
+      } finally {
+        if (mounted) {
+          setIsLoadingPerformance(false);
+        }
+      }
+    };
+
+    loadPerformance();
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedPresetName]);
+
+  // Poll training state for selected preset
+  useEffect(() => {
+    if (!selectedPresetName) return;
+
+    let mounted = true;
+    let pollInterval: NodeJS.Timeout | null = null;
+
+    const pollState = async () => {
+      try {
+        const state = await mlService.getState(selectedPresetName);
+        if (mounted) {
+          setPresetStates(prev => ({
+            ...prev,
+            [selectedPresetName]: state
+          }));
+
+          // If training completed, reload performance and presets
+          if (state.status === 'trained') {
+            await reloadPresets();
+            // Reload performance metrics
+            try {
+              const perf = await mlService.getPerformance(selectedPresetName);
+              if (mounted) {
+                setPerformance(perf);
+              }
+            } catch (error) {
+              console.error('Failed to reload performance:', error);
+            }
+            // Stop polling
+            if (pollInterval) {
+              clearInterval(pollInterval);
+              pollInterval = null;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to poll state:', error);
+      }
+    };
+
+    // Initial poll
+    pollState();
+
+    // Set up polling interval (5 seconds)
+    pollInterval = setInterval(pollState, 5000);
+
+    return () => {
+      mounted = false;
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+    };
+  }, [selectedPresetName]);
+
+  // Load preset configuration when selectedPresetName changes
+  useEffect(() => {
+    if (!selectedPresetName) {
+      setPresetConfig(null);
+      return;
+    }
+
+    const loadConfig = async () => {
+      setIsLoadingConfig(true);
+      try {
+        const config = await mlService.getConfig(selectedPresetName);
+        setPresetConfig(config);
+      } catch (error) {
+        console.error('Failed to load preset config:', error);
+        toast.error("Failed to load preset configuration");
+        setPresetConfig(null);
+      } finally {
+        setIsLoadingConfig(false);
+      }
+    };
+
+    loadConfig();
+  }, [selectedPresetName]);
+
+  // Reload config after edit
+  const reloadPresetConfig = async () => {
+    if (!selectedPresetName) return;
+    
+    try {
+      setIsLoadingConfig(true);
+      const config = await mlService.getConfig(selectedPresetName);
+      setPresetConfig(config);
+      toast.success("Configuration reloaded");
+    } catch (error) {
+      console.error('Failed to reload preset config:', error);
+      toast.error("Failed to reload configuration");
+    } finally {
+      setIsLoadingConfig(false);
+    }
+  };
 
   async function handleSaveConfig(config: {
     configName: string;
@@ -1131,7 +1291,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                     </button>
                     <button
                       onClick={handleDeployLatest}
-                      disabled={isLoadingModels || !latestTrained}
+                      disabled={isLoadingPresets || !latestTrained}
                       className="px-5 py-2.5 bg-[#16a34a] text-white text-sm font-semibold rounded-lg hover:bg-[#15803d] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 hover:shadow-lg flex items-center gap-2 cursor-pointer"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1151,8 +1311,252 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
             className="px-8 py-6 space-y-8 pb-24 min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50"
           >
             
-            {/* Model Overview Section - COMPLETELY REDESIGNED */}
-            <section className="mb-8">
+            {/* WORKFLOW STEP 1: Training Presets - Create/Select preset */}
+            <section className="mb-8 animate-in fade-in duration-700" style={{ animationDelay: '0ms' }}>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-teal-600 shadow-lg">
+                    <TrendingUp className="w-5 h-5 text-white" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-['Poppins:Bold',sans-serif] text-gray-900">
+                      Training Presets
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-0.5">{Array.isArray(presets) ? presets.length : 0} preset(s) configured</p>
+                  </div>
+                </div>
+                {hasPermission("mlModels.manage") && (
+                  <button
+                    onClick={() => setIsCreatePresetOpen(true)}
+                    className="px-5 py-2.5 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl hover:from-green-600 hover:to-teal-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl flex items-center gap-2"
+                  >
+                    <Bot className="w-4 h-4" aria-hidden="true" />
+                    <span>Create New Preset</span>
+                  </button>
+                )}
+              </div>
+              <div className="bg-white border-2 border-green-200 rounded-2xl p-6 hover:shadow-xl transition-all duration-300">
+
+              {Array.isArray(presets) && presets.length > 0 ? (
+                <div className="space-y-4">
+                  {presets.map((preset) => (
+                    <PresetCard
+                      key={preset.name}
+                      preset={preset}
+                      isSelected={selectedPresetName === preset.name}
+                      presetState={presetStates[preset.name]}
+                      onSelect={() => setSelectedPresetName(preset.name)}
+                      onRetrain={async () => {
+                        try {
+                          await mlService.retrain(preset.name);
+                          toast.success(`Training started for preset: ${preset.name}`);
+                          setTimeout(reloadPresets, 1000);
+                        } catch (e: any) {
+                          toast.error(e?.message ?? "Failed to start training");
+                        }
+                      }}
+                      onDelete={async () => {
+                        if (!confirm(`Are you sure you want to delete preset "${preset.name}"?`)) return;
+                        try {
+                          await mlService.deletePreset(preset.name);
+                          toast.success(`Preset "${preset.name}" deleted successfully`);
+                          setSelectedPresetName(null);
+                          reloadPresets();
+                        } catch (e: any) {
+                          toast.error(e?.message ?? "Failed to delete preset");
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Bot className="w-16 h-16 text-blue-500 mx-auto mb-3" aria-hidden="true" />
+                  <p className="text-gray-600 font-medium">No presets configured yet</p>
+                  <p className="text-sm text-gray-500 mt-2">Create your first preset to start training models</p>
+                  {hasPermission("mlModels.manage") && (
+                    <button
+                      onClick={() => setIsCreatePresetOpen(true)}
+                      className="mt-4 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
+                    >
+                      <Bot className="w-4 h-4" aria-hidden="true" />
+                      <span>Create Your First Preset</span>
+                    </button>
+                  )}
+                </div>
+              )}
+              </div>
+            </section>
+
+            {/* WORKFLOW STEP 3: Preset Configuration - Review/Edit config */}
+            {hasPermission("mlModels.manage") && selectedPresetName && (
+              <section className="mb-8 animate-in fade-in duration-700" style={{ animationDelay: '100ms' }}>
+                <div className="mb-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                        <Settings className="w-7 h-7 text-white" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <h2 className="text-3xl font-black text-gray-900">Preset Configuration</h2>
+                        <p className="text-sm text-gray-500 mt-1">Training parameters for <strong>{selectedPresetName}</strong></p>
+                      </div>
+                    </div>
+                    {presetConfig && (
+                      <button
+                        onClick={() => setIsEditConfigOpen(true)}
+                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                      >
+                        <Settings className="w-5 h-5" />
+                        Edit Configuration
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Configuration Container */}
+                <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-lg overflow-hidden">
+                  {presetConfig ? (
+                    <div className="p-6 space-y-6">
+                      {/* Hyperparameters Section */}
+                      <div>
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                            <span className="text-2xl">⚙️</span>
+                          </div>
+                          <h3 className="text-xl font-black text-gray-800">Hyperparameters</h3>
+                        </div>
+                        
+                        {/* Cards Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Test Size Card */}
+                          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border-2 border-blue-200">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                                <span className="text-xl">📊</span>
+                              </div>
+                              <h4 className="text-sm font-bold text-blue-900 uppercase tracking-wide">Test Size</h4>
+                            </div>
+                            <p className="text-4xl font-black text-blue-900">
+                              {((presetConfig.test_size || 0.2) * 100).toFixed(0)}
+                              <span className="text-2xl">%</span>
+                            </p>
+                          </div>
+
+                          {/* N Estimators Card */}
+                          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border-2 border-green-200">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                                <span className="text-xl">🌳</span>
+                              </div>
+                              <h4 className="text-sm font-bold text-green-900 uppercase tracking-wide">N Estimators</h4>
+                            </div>
+                            <p className="text-4xl font-black text-purple-900">{presetConfig.n_estimators || 100}</p>
+                          </div>
+
+                          {/* Max Depth Card */}
+                          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-5 border-2 border-orange-200">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                                <span className="text-xl">📏</span>
+                              </div>
+                              <h4 className="text-sm font-bold text-orange-900 uppercase tracking-wide">Max Depth</h4>
+                            </div>
+                            <p className="text-4xl font-black text-orange-900">
+                              {presetConfig.max_depth === null || presetConfig.max_depth === undefined 
+                                ? "∞" 
+                                : presetConfig.max_depth}
+                            </p>
+                          </div>
+
+                          {/* Class Weight Card */}
+                          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 border-2 border-purple-200">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                                <span className="text-xl">⚖️</span>
+                              </div>
+                              <h4 className="text-sm font-bold text-purple-900 uppercase tracking-wide">Class Weight</h4>
+                            </div>
+                            <p className="text-2xl font-black text-purple-900">
+                              {presetConfig.class_weight === "balanced" ? "⚖️ Balanced" : "📊 None"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Selected Features Section */}
+                      <div>
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                            <span className="text-2xl">🎯</span>
+                          </div>
+                          <h3 className="text-xl font-black text-gray-800">
+                            {presetConfig.features && presetConfig.features.length > 0 
+                              ? `${presetConfig.features.length} Features` 
+                              : "Selected Features"}
+                          </h3>
+                        </div>
+                        
+                        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-5 border-2 border-indigo-200">
+                          {presetConfig.features && presetConfig.features.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {presetConfig.features.map((feature: string, idx: number) => (
+                                <span key={feature} className={`px-4 py-2 text-white text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 ${
+                                  idx % 6 === 0 ? 'bg-blue-600' :
+                                  idx % 6 === 1 ? 'bg-purple-600' :
+                                  idx % 6 === 2 ? 'bg-green-600' :
+                                  idx % 6 === 3 ? 'bg-orange-600' :
+                                  idx % 6 === 4 ? 'bg-pink-600' :
+                                  'bg-indigo-600'
+                                }`}>
+                                  {feature}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              {["Gender", "Age", "Academic Pressure", "CGPA", "Study Satisfaction", 
+                                "Sleep Duration", "Dietary Habits", "Work/Study Hours", "Financial Stress", 
+                                "Family History of Mental Illness"].map((feature, idx) => (
+                                <span key={feature} className={`px-4 py-2 text-white text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 ${
+                                  idx % 6 === 0 ? 'bg-blue-600' :
+                                  idx % 6 === 1 ? 'bg-purple-600' :
+                                  idx % 6 === 2 ? 'bg-green-600' :
+                                  idx % 6 === 3 ? 'bg-orange-600' :
+                                  idx % 6 === 4 ? 'bg-pink-600' :
+                                  'bg-indigo-600'
+                                }`}>
+                                  {feature}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Info Message */}
+                      <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4 flex items-start gap-3">
+                        <Info className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                        <div>
+                          <p className="text-sm font-semibold text-purple-900">Editable Configuration</p>
+                          <p className="text-xs text-purple-700 mt-1">
+                            Click "Edit Configuration" above to modify training parameters. Changes will be saved to this preset.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center text-gray-500">
+                      <Settings className="w-12 h-12 mx-auto mb-3 opacity-30" aria-hidden="true" />
+                      <p className="text-sm font-semibold">Loading configuration...</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* WORKFLOW STEP 4: Model Performance - View training results */}
+            <section className="mb-8 animate-in fade-in duration-700" style={{ animationDelay: '150ms' }}>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
@@ -1175,7 +1579,13 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                   <div className="mb-4">
                     <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2">Accuracy</p>
                     <p className="text-6xl font-black text-blue-900 leading-none">
-                      {latestTrained?.accuracy ? `${(latestTrained.accuracy * 100).toFixed(1)}` : "—"}
+                      {isLoadingPerformance ? (
+                        <span className="text-3xl animate-pulse">Loading...</span>
+                      ) : performance?.accuracy ? (
+                        `${(performance.accuracy * 100).toFixed(1)}`
+                      ) : (
+                        "—"
+                      )}
                     </p>
                     <p className="text-2xl font-black text-blue-700 mt-1">%</p>
                   </div>
@@ -1183,7 +1593,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                     <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-1000 ease-out"
-                        style={{ width: latestTrained?.accuracy ? `${latestTrained.accuracy * 100}%` : '0%' }}
+                        style={{ width: performance?.accuracy ? `${performance.accuracy * 100}%` : '0%' }}
                       ></div>
                     </div>
                     <p className="text-xs text-blue-600 font-semibold mt-2">Model Accuracy Rate</p>
@@ -1198,7 +1608,13 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                   <div className="mb-4">
                     <p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-2">Precision</p>
                     <p className="text-6xl font-black text-purple-900 leading-none">
-                      {latestTrained?.precision ? `${(latestTrained.precision * 100).toFixed(1)}` : "—"}
+                      {isLoadingPerformance ? (
+                        <span className="text-3xl animate-pulse">Loading...</span>
+                      ) : performance?.precision ? (
+                        `${(performance.precision * 100).toFixed(1)}`
+                      ) : (
+                        "—"
+                      )}
                     </p>
                     <p className="text-2xl font-black text-purple-700 mt-1">%</p>
                   </div>
@@ -1206,7 +1622,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                     <div className="w-full h-2 bg-purple-200 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full transition-all duration-1000 ease-out"
-                        style={{ width: latestTrained?.precision ? `${latestTrained.precision * 100}%` : '0%' }}
+                        style={{ width: performance?.precision ? `${performance.precision * 100}%` : '0%' }}
                       ></div>
                     </div>
                     <p className="text-xs text-purple-600 font-semibold mt-2">Positive Prediction Rate</p>
@@ -1221,7 +1637,13 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                   <div className="mb-4">
                     <p className="text-xs font-bold text-green-600 uppercase tracking-widest mb-2">Recall</p>
                     <p className="text-6xl font-black text-green-900 leading-none">
-                      {latestTrained?.recall ? `${(latestTrained.recall * 100).toFixed(1)}` : "—"}
+                      {isLoadingPerformance ? (
+                        <span className="text-3xl animate-pulse">Loading...</span>
+                      ) : performance?.recall ? (
+                        `${(performance.recall * 100).toFixed(1)}`
+                      ) : (
+                        "—"
+                      )}
                     </p>
                     <p className="text-2xl font-black text-green-700 mt-1">%</p>
                   </div>
@@ -1229,7 +1651,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                     <div className="w-full h-2 bg-green-200 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-1000 ease-out"
-                        style={{ width: latestTrained?.recall ? `${latestTrained.recall * 100}%` : '0%' }}
+                        style={{ width: performance?.recall ? `${performance.recall * 100}%` : '0%' }}
                       ></div>
                     </div>
                     <p className="text-xs text-green-600 font-semibold mt-2">Detection Success Rate</p>
@@ -1244,7 +1666,13 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                   <div className="mb-4">
                     <p className="text-xs font-bold text-orange-600 uppercase tracking-widest mb-2">F1 Score</p>
                     <p className="text-6xl font-black text-orange-900 leading-none">
-                      {latestTrained?.f1Score ? `${(latestTrained.f1Score * 100).toFixed(1)}` : "—"}
+                      {isLoadingPerformance ? (
+                        <span className="text-3xl animate-pulse">Loading...</span>
+                      ) : performance?.f1_score ? (
+                        `${(performance.f1_score * 100).toFixed(1)}`
+                      ) : (
+                        "—"
+                      )}
                     </p>
                     <p className="text-2xl font-black text-orange-700 mt-1">%</p>
                   </div>
@@ -1252,13 +1680,131 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                     <div className="w-full h-2 bg-orange-200 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-gradient-to-r from-orange-500 to-orange-600 rounded-full transition-all duration-1000 ease-out"
-                        style={{ width: latestTrained?.f1Score ? `${latestTrained.f1Score * 100}%` : '0%' }}
+                        style={{ width: performance?.f1_score ? `${performance.f1_score * 100}%` : '0%' }}
                       ></div>
                     </div>
                     <p className="text-xs text-orange-600 font-semibold mt-2">Balanced Performance</p>
                   </div>
                 </div>
               </div>
+
+              {/* Confusion Matrix & Feature Importance Grid */}
+              {performance && !isLoadingPerformance && (
+                <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Confusion Matrix */}
+                  <div className="bg-white border-2 border-gray-400 rounded-2xl p-6 shadow-lg">
+                    <div className="flex items-center gap-2 mb-6">
+                      <BarChart3 className="w-6 h-6 text-indigo-600" aria-hidden="true" />
+                      <h3 className="text-xl font-bold text-gray-900">Confusion Matrix</h3>
+                    </div>
+                    
+                    {performance.confusion_matrix && performance.confusion_matrix.length === 2 ? (
+                      <div className="space-y-4">
+                        {/* Matrix Visualization */}
+                        <div className="grid grid-cols-3 gap-2">
+                          {/* Empty top-left cell */}
+                          <div></div>
+                          {/* Predicted Labels */}
+                          <div className="text-center text-sm font-bold text-gray-700">Predicted Normal</div>
+                          <div className="text-center text-sm font-bold text-gray-700">Predicted Depression</div>
+                          
+                          {/* Actual Normal row */}
+                          <div className="text-right text-sm font-bold text-gray-700 flex items-center justify-end pr-2">
+                            Actual Normal
+                          </div>
+                          <div className="bg-green-100 border-2 border-green-400 rounded-lg p-4 flex flex-col items-center justify-center">
+                            <div className="text-3xl font-black text-green-700">
+                              {performance.confusion_matrix[0][0]}
+                            </div>
+                            <div className="text-xs text-green-600 font-semibold mt-1">True Negative</div>
+                          </div>
+                          <div className="bg-red-100 border-2 border-red-400 rounded-lg p-4 flex flex-col items-center justify-center">
+                            <div className="text-3xl font-black text-red-700">
+                              {performance.confusion_matrix[0][1]}
+                            </div>
+                            <div className="text-xs text-red-600 font-semibold mt-1">False Positive</div>
+                          </div>
+                          
+                          {/* Actual Depression row */}
+                          <div className="text-right text-sm font-bold text-gray-700 flex items-center justify-end pr-2">
+                            Actual Depression
+                          </div>
+                          <div className="bg-red-100 border-2 border-red-400 rounded-lg p-4 flex flex-col items-center justify-center">
+                            <div className="text-3xl font-black text-red-700">
+                              {performance.confusion_matrix[1][0]}
+                            </div>
+                            <div className="text-xs text-red-600 font-semibold mt-1">False Negative</div>
+                          </div>
+                          <div className="bg-green-100 border-2 border-green-400 rounded-lg p-4 flex flex-col items-center justify-center">
+                            <div className="text-3xl font-black text-green-700">
+                              {performance.confusion_matrix[1][1]}
+                            </div>
+                            <div className="text-xs text-green-600 font-semibold mt-1">True Positive</div>
+                          </div>
+                        </div>
+                        
+                        {/* Explanation */}
+                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-300">
+                          <p className="text-xs text-gray-600 leading-relaxed">
+                            <strong>True Negative:</strong> Correctly predicted as Normal | 
+                            <strong className="ml-2">False Positive:</strong> Incorrectly predicted as Depression<br/>
+                            <strong>False Negative:</strong> Missed Depression cases | 
+                            <strong className="ml-2">True Positive:</strong> Correctly predicted as Depression
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30" aria-hidden="true" />
+                        <p className="text-sm">No confusion matrix data available</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Feature Importance */}
+                  <div className="bg-white border-2 border-gray-400 rounded-2xl p-6 shadow-lg">
+                    <div className="flex items-center gap-2 mb-6">
+                      <TrendingUp className="w-6 h-6 text-purple-600" aria-hidden="true" />
+                      <h3 className="text-xl font-bold text-gray-900">Feature Importance</h3>
+                    </div>
+                    
+                    {performance.feature_importance && Object.keys(performance.feature_importance).length > 0 ? (
+                      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                        {Object.entries(performance.feature_importance)
+                          .sort(([, a], [, b]) => b - a) // Sort by importance descending
+                          .slice(0, 10) // Top 10 features
+                          .map(([feature, importance], index) => {
+                            const percentage = (importance * 100).toFixed(1);
+                            const maxImportance = Math.max(...Object.values(performance.feature_importance));
+                            const barWidth = (importance / maxImportance) * 100;
+                            
+                            return (
+                              <div key={feature} className="space-y-1">
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="font-semibold text-gray-700 truncate flex-1" title={feature}>
+                                    {index + 1}. {feature}
+                                  </span>
+                                  <span className="text-purple-600 font-bold ml-2">{percentage}%</span>
+                                </div>
+                                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full transition-all duration-500"
+                                    style={{ width: `${barWidth}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-30" aria-hidden="true" />
+                        <p className="text-sm">No feature importance data available</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Training Info Panel */}
               {latestTrained && (
@@ -1299,7 +1845,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                     <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-400 shadow-sm">
                       <div className="text-sm text-gray-900 font-bold mb-2 uppercase">Samples</div>
                       <div className="font-bold text-gray-900 text-base">
-                        {latestTrained.sampleSize || mockStudents.length}
+                        {latestTrained.sampleSize || extendedMockStudents.length}
                       </div>
                     </div>
                   </div>
@@ -1307,269 +1853,19 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
               )}
             </section>
 
-            {/* Configuration Section - COMPLETELY REDESIGNED */}
-            {hasPermission("mlModels.manage") && (
-              <section className="mb-8">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h2 className="text-3xl font-black text-gray-900">Model Configuration</h2>
-                      <p className="text-sm text-gray-500 mt-1">Customize training parameters</p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Configuration Container */}
-                <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-lg overflow-hidden">
-                  {/* Top Bar - Config Selector */}
-                  <div className="bg-gradient-to-r from-gray-50 to-white p-6 border-b-2 border-gray-100">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Active Configuration</label>
-                        <select
-                          value={selectedConfigName ?? ""}
-                          onChange={(e) => {
-                            const val = e.target.value || null;
-                            setSelectedConfigName(val);
-                            if (val) localStorage.setItem("ml:activeConfig", val);
-                          }}
-                          className="w-full bg-white border-2 border-gray-300 rounded-xl px-4 py-3 text-base font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400 transition-all"
-                        >
-                          <option value="">Select a configuration...</option>
-                          {configs.map(c => (
-                            <option key={c.configName} value={c.configName} className="font-semibold">{c.configName}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <button
-                        onClick={openConfigDialog}
-                        className="mt-6 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-base font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-colors duration-200 shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        <span>Create / Edit</span>
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {selectedConfigName && (() => {
-                    const cfg = configs.find(c => c.configName === selectedConfigName);
-                    if (!cfg) return null;
-                    return (
-                      <div className="p-6 space-y-6">
-                        {/* Hyperparameters Section */}
-                        <div>
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                              <span className="text-2xl">📋</span>
-                            </div>
-                            <h3 className="text-2xl font-black text-gray-900">Hyperparameters</h3>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Train/Test Split */}
-                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border-2 border-blue-200">
-                              <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">Train/Test Split</p>
-                              <p className="text-4xl font-black text-blue-900">{cfg.trainTestRatio}<span className="text-2xl">%</span></p>
-                            </div>
-                            
-                            {/* Other Hyperparameters */}
-                            {Object.entries(cfg.hyperparameters || {}).map(([key, value], idx) => (
-                              <div key={key} className={`rounded-xl p-5 border-2 ${
-                                idx % 4 === 0 ? 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200' :
-                                idx % 4 === 1 ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200' :
-                                idx % 4 === 2 ? 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200' :
-                                'bg-gradient-to-br from-pink-50 to-pink-100 border-pink-200'
-                              }`}>
-                                <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${
-                                  idx % 4 === 0 ? 'text-purple-600' :
-                                  idx % 4 === 1 ? 'text-green-600' :
-                                  idx % 4 === 2 ? 'text-orange-600' :
-                                  'text-pink-600'
-                                }`}>{key.replace(/([A-Z])/g, ' $1')}</p>
-                                <p className={`text-4xl font-black ${
-                                  idx % 4 === 0 ? 'text-purple-900' :
-                                  idx % 4 === 1 ? 'text-green-900' :
-                                  idx % 4 === 2 ? 'text-orange-900' :
-                                  'text-pink-900'
-                                }`}>{String(value)}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        {/* Selected Features Section */}
-                        <div>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-                              <Target className="w-5 h-5 text-indigo-600" aria-hidden="true" />
-                            </div>
-                              <h3 className="text-2xl font-black text-gray-900">Selected Features</h3>
-                            </div>
-                            <span className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-full">
-                              {Object.values(cfg.selectedFeatures || {}).filter(Boolean).length} Features
-                            </span>
-                          </div>
-                          
-                          <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border-2 border-gray-200">
-                            <div className="flex flex-wrap gap-2">
-                              {Object.entries(cfg.selectedFeatures || {})
-                                .filter(([, v]) => v)
-                                .map(([key], idx) => (
-                                  <span key={key} className={`px-4 py-2 text-white text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 ${
-                                    idx % 6 === 0 ? 'bg-blue-600' :
-                                    idx % 6 === 1 ? 'bg-purple-600' :
-                                    idx % 6 === 2 ? 'bg-green-600' :
-                                    idx % 6 === 3 ? 'bg-orange-600' :
-                                    idx % 6 === 4 ? 'bg-pink-600' :
-                                    'bg-indigo-600'
-                                  }`}>
-                                    {key}
-                                  </span>
-                                ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
+            {/* WORKFLOW STEP 5: Dataset Analysis - Detailed statistics */}
+            {selectedPresetName && (
+              <section className="mb-8 animate-in fade-in duration-700" style={{ animationDelay: '200ms' }}>
+                <DatasetAnalysis presetName={selectedPresetName} />
               </section>
             )}
 
-            {/* Datasets & Artifacts Section */}
-            {hasPermission("datasets.manage") && (
-              <div className="mb-6">
-                <DatasetManagement />
-              </div>
+            {/* WORKFLOW STEP 6: Plots Gallery - Visual insights */}
+            {selectedPresetName && (
+              <section className="mb-8 animate-in fade-in duration-700" style={{ animationDelay: '250ms' }}>
+                <PlotsGallery presetName={selectedPresetName} />
+              </section>
             )}
-
-            {/* Training History Section */}
-            <section className="animate-in fade-in duration-700" style={{ animationDelay: '200ms' }}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-teal-600 shadow-lg">
-                  <TrendingUp className="w-5 h-5 text-white" aria-hidden="true" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-['Poppins:Bold',sans-serif] text-gray-900">
-                    Training History
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-0.5">{models.length} model(s) trained</p>
-                </div>
-              </div>
-              <div className="bg-white border-2 border-green-200 rounded-2xl p-6 hover:shadow-xl transition-all duration-300">
-
-              {models.length > 0 ? (
-                <div className="space-y-4">
-                  {models.slice(0, 5).map((model) => (
-                    <div key={model.id} className="bg-gradient-to-r from-white to-gray-50 border-2 border-gray-200 rounded-xl p-5 hover:border-green-300 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            <Bot className="w-5 h-5 text-gray-600" aria-hidden="true" />
-                            <h3 className="font-bold text-gray-900 text-base">{model.modelName}</h3>
-                            <span className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
-                              model.status === 'deployed' ? 'bg-green-100 text-green-700 border border-green-300' :
-                              model.status === 'trained' ? 'bg-blue-100 text-blue-700 border border-blue-300' :
-                              model.status === 'training' ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' :
-                              'bg-red-100 text-red-700 border border-red-300'
-                            }`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${
-                                model.status === 'deployed' ? 'bg-green-500 animate-pulse' :
-                                model.status === 'trained' ? 'bg-blue-500' :
-                                model.status === 'training' ? 'bg-yellow-500 animate-pulse' :
-                                'bg-red-500'
-                              }`}></span>
-                              {model.status.toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-3 text-sm">
-                            {model.accuracy && (
-                              <div className="flex items-center gap-2">
-                                <BarChart3 className="w-3 h-3 text-gray-500" aria-hidden="true" />
-                                <span className="text-gray-500 text-xs">Accuracy:</span>
-                                <span className="font-bold text-blue-600">{(model.accuracy * 100).toFixed(1)}%</span>
-                              </div>
-                            )}
-                            {model.precision && (
-                              <div className="flex items-center gap-2">
-                                <Target className="w-3 h-3 text-gray-500" aria-hidden="true" />
-                                <span className="text-gray-500 text-xs">Precision:</span>
-                                <span className="font-bold text-purple-600">{(model.precision * 100).toFixed(1)}%</span>
-                              </div>
-                            )}
-                            {model.recall && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-500 text-xs">🔄 Recall:</span>
-                                <span className="font-bold text-green-600">{(model.recall * 100).toFixed(1)}%</span>
-                              </div>
-                            )}
-                            {model.f1Score && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-500 text-xs">⚡ F1:</span>
-                                <span className="font-bold text-orange-600">{(model.f1Score * 100).toFixed(1)}%</span>
-                              </div>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
-                            <Clock className="w-3 h-3" aria-hidden="true" />
-                            <span>Trained: {new Date(model.updatedAt || model.createdAt).toLocaleString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric', 
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}</span>
-                          </p>
-                        </div>
-                        <div className="flex gap-2 ml-4">
-                          <button 
-                            aria-label={`View details for model ${model.modelName}`}
-                            className="px-4 py-2 text-xs bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-semibold shadow-sm hover:shadow-md flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                          >
-                            <Eye className="w-3 h-3" aria-hidden="true" />
-                            <span>View</span>
-                          </button>
-                          {model.status === 'deployed' && (
-                            <button 
-                              aria-label={`Download model ${model.modelName}`}
-                              className="px-4 py-2 text-xs bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 font-semibold shadow-sm hover:shadow-md flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                            >
-                              <Download className="w-3 h-3" aria-hidden="true" />
-                              <span>Download</span>
-                            </button>
-                          )}
-                          <button 
-                            aria-label={`Delete model ${model.modelName}`}
-                            className="px-4 py-2 text-xs border-2 border-red-200 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all duration-200 font-semibold flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                          >
-                            <Trash2 className="w-3 h-3" aria-hidden="true" />
-                            <span>Delete</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Bot className="w-16 h-16 text-blue-500 mx-auto mb-3" aria-hidden="true" />
-                  <p className="text-gray-600 font-medium">No training history yet</p>
-                  <p className="text-sm text-gray-500 mt-2">Train your first model to see results here</p>
-                </div>
-              )}
-              </div>
-            </section>
 
           </div>
         </div>
@@ -1615,6 +1911,26 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
         onSave={handleSaveConfig}
         onOpenChange={setIsConfigDialogOpen}
       />
+      
+      {/* Create Preset Dialog */}
+      <CreatePresetDialog
+        open={isCreatePresetOpen}
+        onOpenChange={setIsCreatePresetOpen}
+        onPresetCreated={() => {
+          reloadPresets();
+        }}
+      />
+
+      {/* Edit Preset Config Dialog */}
+      {selectedPresetName && presetConfig && (
+        <EditPresetConfigDialog
+          isOpen={isEditConfigOpen}
+          onClose={() => setIsEditConfigOpen(false)}
+          presetName={selectedPresetName}
+          currentConfig={presetConfig}
+          onConfigUpdated={reloadPresetConfig}
+        />
+      )}
     </div>
   );
 }
