@@ -72,5 +72,5 @@
       ]
     }
   ],
-  "model_path": "public\\dataset_model\\preset1\\model.pkl"
+  "model_path": "public\\dataset_model\\preset2\\model.pkl"
 }

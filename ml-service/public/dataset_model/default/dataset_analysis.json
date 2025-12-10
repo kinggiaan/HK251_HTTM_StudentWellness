@@ -1,5 +1,5 @@
 {
-  "dataset_path": "public/dataset_model/default/dataset.csv",
+  "dataset_path": "public\\dataset_model\\default\\dataset.csv",
   "config": {
     "status": "default",
     "data": {}

@@ -1,17 +1,17 @@
 {
   "test_metrics": {
     "depression_truth": {
-      "acc": 0.7916367552045944,
-      "precision": 0.7873906550032004,
-      "recall": 0.7817875295137593,
-      "f1": 0.784040805792418
+      "acc": 0.7905599425699928,
+      "precision": 0.7863561301878497,
+      "recall": 0.7805021824700575,
+      "f1": 0.7828335651603604
     }
   },
   "confusion_matrices": {
     "depression_truth": [
       [
-        1683,
-        651
+        1677,
+        657
       ],
       [
         510,
@@ -31,46 +31,46 @@
       "top_k": [
         {
           "name": "cat__Sleep Duration_0.0",
-          "importance": 0.1352175863615971
+          "importance": 0.13664199192462986
         },
         {
           "name": "cat__Dietary Habits_2.0",
-          "importance": 0.05639300134589498
+          "importance": 0.05909600717810679
         },
         {
           "name": "cat__Gender_1.0",
-          "importance": 0.026828174069089234
+          "importance": 0.029609690444145374
         },
         {
           "name": "cat__Dietary Habits_0.0",
-          "importance": 0.017642440556303242
+          "importance": 0.020311799013010345
         },
         {
           "name": "cat__Dietary Habits_1.0",
-          "importance": 0.012662628981606083
+          "importance": 0.016128308658591318
         },
         {
           "name": "cat__Sleep Duration_2.0",
-          "importance": 0.009881112606549985
+          "importance": 0.013021534320323042
         },
         {
           "name": "cat__Sleep Duration_3.0",
-          "importance": 0.003779721848362455
+          "importance": 0.00640421713772994
         },
         {
           "name": "cat__Sleep Duration_1.0",
-          "importance": 0.0019851951547778914
+          "importance": 0.005383580080753713
         },
         {
           "name": "cat__Gender_0.0",
-          "importance": 0.00041498429789139647
+          "importance": 0.002243158366980735
         },
         {
           "name": "cat__Family History of Mental Illness_0.0",
-          "importance": -0.0024113952445043
+          "importance": -0.0008636159712875569
         }
       ]
     }
   ],
-  "model_path": "public/dataset_model/default/model.pkl"
+  "model_path": "public\\dataset_model\\default\\model.pkl"
 }
