@@ -1,23 +1,11 @@
 {
-  "dataset_path": "public/dataset_model/preset1/dataset.csv",
+  "dataset_path": "public\\dataset_model\\preset1\\dataset.csv",
   "config": {
     "status": "loaded",
     "data": {
-      "features": [
-        "Gender",
-        "Age",
-        "Academic Pressure",
-        "CGPA",
-        "Study Satisfaction",
-        "Sleep Duration",
-        "Dietary Habits",
-        "Work/Study Hours",
-        "Financial Stress",
-        "Family History of Mental Illness"
-      ],
+      "features": [],
       "test_size": 0.2,
-      "n_estimators": 500,
-      "max_depth": null,
+      "n_estimators": 100,
       "class_weight": "balanced"
     }
   },

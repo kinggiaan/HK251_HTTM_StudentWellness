@@ -52,11 +52,14 @@ export function LoginPage() {
     e.preventDefault();
     
     if (!account || !password) {
-      toast.error("Please enter both account and password");
+      toast.error("Please enter both email and password", {
+        description: "Both fields are required to login"
+      });
       return;
     }
 
     setIsSubmitting(true);
+    toast.loading("Signing in...", { id: "login-toast" });
     try {
       await login({
         email: account,
@@ -64,9 +67,15 @@ export function LoginPage() {
       });
       // Login success is handled by AuthContext
     } catch (error: any) {
-      // Error is already handled by AuthContext
-      console.error("Login error:", error);
+      // Error toast is already shown by AuthContext
+      // Just log additional details for debugging
+      if (error?.status) {
+        console.error(`Login failed with status ${error.status}:`, error.message);
+      } else {
+        console.error("Login error:", error);
+      }
     } finally {
+      toast.dismiss("login-toast");
       setIsSubmitting(false);
     }
   };

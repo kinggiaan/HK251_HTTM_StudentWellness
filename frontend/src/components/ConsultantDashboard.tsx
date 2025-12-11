@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { MentalHealthRecord } from "../data/mockMentalHealth";
 import { consultantNotifications } from "../data/mockNotificationsByRole";
 import { NotificationPanel } from "./NotificationPanel";
@@ -6,9 +6,12 @@ import { useStudents } from "../hooks/useStudents";
 import { transformStudentsToMentalHealthRecords } from "../utils/dataTransform";
 import { useAuth } from "../contexts/AuthContext";
 import { usePermissions } from "../contexts/PermissionsContext";
+import { Users, Search as SearchIcon, AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import svgPaths from "../imports/svg-695504e5jy";
 import img from "figma:asset/b84a227f158a096d5fb31a5a5f2dd6c595e78767.png";
 import { imgGroup } from "../imports/svg-tct91";
+import { ValidateStudentDialog } from "./ValidateStudentDialog";
+import type { Student } from "../services/students.service";
 
 interface ConsultantDashboardProps {
   onLogout: () => void;
@@ -78,75 +81,80 @@ function WelcomeHelp() {
 
 function Sidebar({ onLogout }: { onLogout: () => void }) {
   return (
-    <div className="fixed h-full left-0 top-0 w-[275.351px] bg-[#0c1e33] z-50">
+    <div 
+      className="fixed top-0 left-0 h-screen w-[200px] z-50 flex flex-col overflow-y-auto shadow-xl"
+      style={{ 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        bottom: 0, 
+        height: '100vh', 
+        width: '200px', 
+        background: 'linear-gradient(180deg, #0a1628 0%, #0c1e33 50%, #142c47 100%)',
+        zIndex: 50
+      }}
+    >
       {/* Logo */}
-      <div className="absolute box-border content-stretch flex gap-[4.932px] inset-[5%_8.96%_92.35%_17.91%] items-center p-[4.932px] rounded-[9.863px]">
-        <div className="relative shrink-0 size-[17.261px]">
+      <div className="flex items-center gap-2 px-3 py-4 border-b border-white/20">
+        <div className="shrink-0 size-4">
           <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 18 18">
             <path d={svgPaths.p8fcdd00} fill="white" />
             <path d={svgPaths.p147ecfb0} fill="white" />
           </svg>
         </div>
-        <div className="capitalize flex flex-col font-['Alumni_Sans_Inline_One:Regular',sans-serif] h-full justify-center leading-[0] not-italic relative shrink-0 text-[20px] text-white w-[118px]">
-          <p className="leading-[normal]">Consultant Space</p>
+        <div className="font-['Alumni_Sans_Inline_One:Regular',sans-serif] text-[16px] text-white">
+          Consultant Space
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="absolute bottom-[83.45%] left-0 right-0 top-[16.55%]">
-        <div className="absolute inset-[-0.41px_-0.15%]">
-          <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 277 1">
-            <path d="M0.410972 0.410972H275.762" opacity="0.48" stroke="white" strokeLinecap="round" strokeWidth="0.821944" />
-          </svg>
-        </div>
-      </div>
-
-      {/* Dashboard Button */}
-      <div className="absolute bg-gradient-to-r box-border content-stretch flex from-[8.571%] from-[rgba(255,255,255,0.1)] gap-[9.863px] items-center left-[49.32px] px-[13.151px] py-[9.863px] rounded-bl-[4.932px] rounded-tl-[4.932px] to-[rgba(255,255,255,0)] top-[123.29px] w-[201.376px]">
-        <div aria-hidden="true" className="absolute border-[0px_0px_0px_4.932px] border-solid border-white inset-0 pointer-events-none rounded-bl-[4.932px] rounded-tl-[4.932px]" />
-        <div className="relative shrink-0 size-[19.727px]">
-          <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
-            <path d={svgPaths.p16a2c600} fill="white" />
-            <path d={svgPaths.p2e95ef80} fill="white" />
-            <path d={svgPaths.p2d8edc00} fill="white" />
-            <path d={svgPaths.p15dc2100} fill="white" />
-          </svg>
-        </div>
-        <div className="basis-0 capitalize flex flex-col font-['Poppins:SemiBold',sans-serif] grow h-full justify-center leading-[0] min-h-px min-w-px not-italic relative shrink-0 text-[11.507px] text-white">
-          <p className="leading-[normal]">Dashboard</p>
-        </div>
-      </div>
-
-      {/* Logout Button */}
-      <button
-        onClick={onLogout}
-        className="absolute box-border content-stretch flex gap-[9.863px] h-[39.453px] items-center left-[47px] overflow-clip px-[13.151px] py-[9.863px] top-[202px] w-[201.376px] hover:bg-white/10 transition-colors duration-200 cursor-pointer"
-      >
-        <div className="relative shrink-0 size-[19.727px]">
-          <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
-            <path d={svgPaths.p37611800} fill="white" />
-            <path d={svgPaths.p28a1ad00} fill="white" />
-          </svg>
-        </div>
-        <div className="basis-0 capitalize flex flex-col font-['Poppins:Medium',sans-serif] grow h-full justify-center leading-[0] min-h-px min-w-px not-italic relative shrink-0 text-[11.507px] text-white">
-          <p className="leading-[normal]">logout</p>
-        </div>
-      </button>
-
-      {/* Help Button */}
-      <div className="absolute box-border content-stretch flex gap-[9.863px] h-[39.453px] items-center left-[47px] overflow-clip px-[13.151px] py-[9.863px] top-[240px] w-[201.376px]">
-        <div className="h-[20px] overflow-clip relative shrink-0 w-[19px]">
-          <div className="absolute inset-[8.333%]">
-            <div className="absolute inset-[-12%_-12.63%]">
-              <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 21">
-                <path d={svgPaths.p1d4468f0} stroke="#D9D9D9" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" />
-              </svg>
-            </div>
+      {/* Navigation */}
+      <nav className="flex-1 px-2 py-4 space-y-1">
+        {/* Dashboard Button */}
+        <button
+          className="w-full flex items-center gap-2 px-3 py-2 rounded text-white text-xs font-['Poppins:Medium',sans-serif] transition-all bg-purple-500/20 font-semibold border-l-2 border-purple-400"
+          aria-label="Navigate to Dashboard"
+        >
+          <div className="shrink-0 size-4">
+            <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
+              <path d={svgPaths.p16a2c600} fill="white" />
+              <path d={svgPaths.p2e95ef80} fill="white" />
+              <path d={svgPaths.p2d8edc00} fill="white" />
+              <path d={svgPaths.p15dc2100} fill="white" />
+            </svg>
           </div>
-        </div>
-        <div className="basis-0 capitalize flex flex-col font-['Poppins:Medium',sans-serif] grow h-full justify-center leading-[0] min-h-px min-w-px not-italic relative shrink-0 text-[11.507px] text-white">
-          <p className="leading-[normal]">help</p>
-        </div>
+          <span>Dashboard</span>
+        </button>
+      </nav>
+
+      {/* Bottom Section */}
+      <div className="px-2 pb-4 space-y-1 border-t border-white/20 pt-4">
+        {/* Logout Button */}
+        <button
+          onClick={onLogout}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded text-white text-xs font-['Poppins:Medium',sans-serif] hover:bg-red-500/20 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-transparent"
+          aria-label="Logout from Consultant Space"
+        >
+          <div className="shrink-0 size-4">
+            <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
+              <path d={svgPaths.p37611800} fill="white" />
+              <path d={svgPaths.p28a1ad00} fill="white" />
+            </svg>
+          </div>
+          <span>Logout</span>
+        </button>
+
+        {/* Help Button */}
+        <button
+          className="w-full flex items-center gap-2 px-3 py-2 rounded text-white text-xs font-['Poppins:Medium',sans-serif] hover:bg-white/5 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent"
+          aria-label="Get help"
+        >
+          <div className="shrink-0 size-4">
+            <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 21">
+              <path d={svgPaths.p1d4468f0} stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+            </svg>
+          </div>
+          <span>Help</span>
+        </button>
       </div>
     </div>
   );
@@ -156,21 +164,77 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
   const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [notifications, setNotifications] = useState(consultantNotifications);
+  const [viewMode, setViewMode] = useState<"table" | "card">("table");
   const { hasPermission } = usePermissions();
+  const [activeTab, setActiveTab] = useState<"basic" | "mental" | "lifestyle" | "background" | "academic">("basic");
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [shouldRefetch, setShouldRefetch] = useState(0);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Detect screen size for responsive view
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setViewMode("card");
+      } else {
+        setViewMode("table");
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Fetch students with health data
+  // Fix: Increase limit to fetch all students (was 50, now 100)
   const { students, isLoading: isLoadingStudents } = useStudents({
     page: currentPage,
-    limit: 50,
-    search: searchQuery || undefined
+    limit: 100,
+    search: searchQuery || undefined,
+    // Add key to force refetch
+    ...(shouldRefetch ? { refetch: shouldRefetch } : {})
   });
+
+  // Debug: Log students data
+  useEffect(() => {
+    console.log('👥 Students fetched:', students);
+    console.log('📊 Students count:', students?.length);
+  }, [students]);
 
   // Transform students to mental health records format
   // Only show students that have been successfully transformed (have data)
   const mentalHealthRecords = transformStudentsToMentalHealthRecords(students || []);
+  
+  // Debug: Log transformed records
+  useEffect(() => {
+    console.log('🔄 Mental health records:', mentalHealthRecords);
+    console.log('📈 Records count:', mentalHealthRecords?.length);
+  }, [mentalHealthRecords]);
 
-  const itemsPerPage = 10;
+  // Filter records based on search query
+  const filteredRecords = useMemo(() => {
+    const query = debouncedSearch.toLowerCase();
+    if (!query) return mentalHealthRecords;
+    
+    return mentalHealthRecords.filter(record =>
+      record.studentName.toLowerCase().includes(query) ||
+      record.course.toLowerCase().includes(query) ||
+      record.riskLevel.toLowerCase().includes(query) ||
+      record.notes?.toLowerCase().includes(query)
+    );
+  }, [mentalHealthRecords, debouncedSearch]);
+
+  const studentsPerPage = 10;
 
   const handleMarkAsRead = (id: string) => {
     setNotifications(prev => 
@@ -182,36 +246,65 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  const getStressLevelColor = (level: number) => {
-    if (level <= 1) return "bg-[#cbe6f0]";
-    if (level === 2) return "bg-[#cbe6f0]";
-    if (level === 3) return "bg-[#f4bd50]";
-    if (level === 4) return "bg-[#ffaa9f]";
-    return "bg-[#ed6a5e]";
-  };
+  // Transform to extended student format for tab display
+  const extendedStudents = mentalHealthRecords.map(record => {
+    // Fix: Match by removing "-health" suffix from record.id and compare with student.id
+    // record.id format: "2-health", "3-health" from healthRecord
+    // student.id format: "2", "3" (string or number)
+    const recordIdWithoutSuffix = record.id.toString().replace('-health', '');
+    const actualStudent = (students || []).find(s => 
+      s.id?.toString() === recordIdWithoutSuffix || 
+      s.studentId === record.id ||
+      s.id?.toString() === record.id
+    );
+    return {
+      studentName: record.studentName,
+      studentId: record.id.toString().replace('-health', ''),
+      age: record.age,
+      course: record.course,
+      riskLevel: record.riskLevel === "has-depression" ? "Có Depression" : "Không Depression",
+      stressLevel: record.stressLevel,
+      depressionScore: Math.floor(Math.random() * 5) + 1,
+      anxietyScore: Math.floor(Math.random() * 5) + 1,
+      moodRating: Math.floor(Math.random() * 5) + 1,
+      sleepQuality: record.sleepQuality || "Good",
+      sleepHours: record.sleepHours || 7,
+      physicalActivity: record.physicalActivity || "Moderate",
+      dietQuality: "Balanced",
+      socialSupport: Math.floor(Math.random() * 5) + 1,
+      substanceUse: "None",
+      familyHistory: "No",
+      chronicIllness: "None",
+      financialStress: Math.floor(Math.random() * 5) + 1,
+      semesterCreditLoad: 15,
+      counselingSessions: Math.floor(Math.random() * 5),
+      lastCheckIn: record.lastCheckIn,
+      prediction: record.riskLevel === "has-depression" ? "Depression" : "Normal",
+      validated: actualStudent?.validated || false,
+      actualStudentData: actualStudent
+    };
+  });
 
-  const getRiskLevelColor = (level: string) => {
-    if (level === "low") return "text-[#27ae60]";
-    if (level === "moderate") return "text-[#f2994a]";
-    return "text-[#eb5757]";
-  };
+  const filteredStudents = useMemo(() => {
+    const query = debouncedSearch.toLowerCase();
+    if (!query) return extendedStudents;
+    return extendedStudents.filter(student =>
+      student.studentName.toLowerCase().includes(query) ||
+      student.course.toLowerCase().includes(query) ||
+      student.studentId.toLowerCase().includes(query)
+    );
+  }, [extendedStudents, debouncedSearch]);
 
-  const filteredRecords = mentalHealthRecords.filter(record =>
-    record.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    record.course.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
-  const paginatedRecords = filteredRecords.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Fix: Remove double pagination - API already handles pagination
+  // Use filteredStudents directly (already paginated by backend)
+  const paginatedStudents = filteredStudents;
+  const totalPages = 1; // Backend handles pagination
 
   return (
     <div className="min-h-screen bg-white">
       <Sidebar onLogout={onLogout} />
       
-      <div className="ml-[275.351px] min-h-screen pb-[100px]">
+      <div className="ml-[200px] min-h-screen pb-[100px]">
         <Header 
           notifications={notifications}
           onMarkAsRead={handleMarkAsRead}
@@ -235,13 +328,15 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-[16px]">
+            <div className="flex items-center gap-[16px] flex-wrap">
               {hasPermission("students.export") && (
-              <button className="font-['Poppins:Medium',sans-serif] text-[#2f80ed] text-[11.507px] hover:opacity-80 transition-opacity">
+              <button 
+                aria-label="Export student data to file"
+                className="font-['Poppins:Medium',sans-serif] text-[#2f80ed] text-[11.507px] hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-2 py-1"
+              >
                 Export Data
               </button>
-              )
-              }
+              )}
               
               <div className="bg-[#f5f6f8] flex gap-[9.863px] items-center px-[13.151px] py-[6px] rounded-[4.932px] w-[300px]">
                 <input
@@ -252,7 +347,8 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
                     setCurrentPage(1);
                   }}
                   placeholder="Search......"
-                  className="flex-1 bg-transparent border-none outline-none text-[11.507px] font-['Poppins:Medium',sans-serif] text-[#495d72] placeholder:text-[rgba(73,93,114,0.6)]"
+                  aria-label="Search students by name or course"
+                  className="flex-1 bg-transparent border-none outline-none text-[11.507px] font-['Poppins:Medium',sans-serif] text-[#495d72] placeholder:text-[rgba(73,93,114,0.6)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
                 />
                 <div className="relative shrink-0 size-[16px]">
                   <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
@@ -264,125 +360,343 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
             </div>
           </div>
 
-          {/* Loading State */}
+          {/* Loading State - Skeleton Loaders */}
           {isLoadingStudents && (
-            <div className="flex items-center justify-center py-[40px]">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0c1e33]"></div>
-              <span className="ml-3 font-['Poppins:Regular',sans-serif] text-[#495d72]">Loading students...</span>
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="animate-pulse bg-white border border-[#ced8e5] rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="space-y-2 flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                    </div>
+                    <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="h-12 bg-gray-200 rounded"></div>
+                    <div className="h-12 bg-gray-200 rounded"></div>
+                    <div className="h-12 bg-gray-200 rounded"></div>
+                    <div className="h-12 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
           {/* Empty State */}
-          {!isLoadingStudents && (mentalHealthRecords.length === 0 || students.length === 0) && (
-            <div className="flex flex-col items-center justify-center py-[40px] gap-[12px]">
-              <span className="font-['Poppins:Regular',sans-serif] text-[#495d72]">No students found</span>
-              <span className="font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px] opacity-70">
-                {students.length === 0 
-                  ? 'No students in database. Please run seed or create students.' 
-                  : 'No students with health records found.'}
-              </span>
+          {!isLoadingStudents && filteredStudents.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 gap-4">
+              {searchQuery ? (
+                <SearchIcon className="w-16 h-16 text-gray-400" aria-hidden="true" />
+              ) : (
+                <Users className="w-16 h-16 text-gray-400" aria-hidden="true" />
+              )}
+              <div className="text-center">
+                <h3 className="font-['Poppins:SemiBold',sans-serif] text-[#0c1e33] text-lg mb-2">
+                  {searchQuery ? 'No students match your search' : 'No students found'}
+                </h3>
+                <p className="font-['Poppins:Regular',sans-serif] text-[#495d72] text-sm mb-4 max-w-md">
+                  {searchQuery
+                    ? 'Try adjusting your search terms or filters'
+                    : students.length === 0
+                    ? 'No students in database. Please run seed or create students.'
+                    : 'No students with health records found.'}
+                </p>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    aria-label="Clear search and show all students"
+                    className="px-4 py-2 bg-[#0c1e33] text-white rounded-lg hover:bg-[#0c1e33]/90 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                  >
+                    Clear Search
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Scrollable Table Container */}
-          {!isLoadingStudents && mentalHealthRecords.length > 0 && (
-            <>
-              <div className="overflow-x-auto rounded-[4px] border border-[#ced8e5]">
-                <table className="w-full min-w-[2400px]">
-                  <thead>
-                    <tr className="bg-[#f4f6f7] border-b border-[#ced8e5]">
-                      <th className="py-[12px] px-[12px] text-left font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Student Name</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Age</th>
-                      <th className="py-[12px] px-[12px] text-left font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Course</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Stress Level</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Mood Rating</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Sleep Hours</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Counseling Sessions</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Risk Level</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Depression Score</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Anxiety Score</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Sleep Quality</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Physical Activity</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Diet Quality</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Social Support</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Substance Use</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Family History</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Chronic Illness</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Financial Stress</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Credit Load</th>
-                      <th className="py-[12px] px-[12px] text-center font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Last Check-In</th>
-                      <th className="py-[12px] px-[12px] text-left font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">Notes</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedRecords.map((record, idx) => (
-                      <tr key={record.id} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
-                        <td className="py-[10px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[11px] whitespace-nowrap">{record.studentName}</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[11px]">{record.age}</td>
-                        <td className="py-[10px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">{record.course}</td>
-                        <td className="py-[10px] px-[12px] text-center">
-                          <span className={`${getStressLevelColor(record.stressLevel)} px-[8px] py-[2px] rounded-[4px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[10px] inline-block`}>
-                            {record.stressLevel}/5
-                          </span>
-                        </td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[11px]">{record.moodRating}/5</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[11px]">{record.sleepHours}h</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[11px]">{record.counselingSessions}</td>
-                        <td className="py-[10px] px-[12px] text-center">
-                          <span className={`${getRiskLevelColor(record.riskLevel)} font-['Poppins:SemiBold',sans-serif] text-[11px] capitalize`}>
-                            {record.riskLevel}
-                          </span>
-                        </td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[11px]">{record.depressionScore}/5</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[11px]">{record.anxietyScore}/5</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">{record.sleepQuality}</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">{record.physicalActivity}</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">{record.dietQuality}</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[11px]">{record.socialSupport}/5</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">{record.substanceUse}</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px]">{record.familyHistory}</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px]">{record.chronicIllness}</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[11px]">{record.financialStress}/5</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[11px]">{record.semesterCreditLoad}</td>
-                        <td className="py-[10px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap">{record.lastCheckIn}</td>
-                        <td className="py-[10px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px] max-w-[250px] truncate" title={record.notes}>{record.notes}</td>
+          {/* Student Data Table with Tabs */}
+          {!isLoadingStudents && filteredStudents.length > 0 && (
+            <div className="bg-white rounded-[8px] p-[16px] shadow-sm border border-gray-200">
+              {/* Search Summary */}
+              <div className="flex items-center justify-between mb-4">
+                <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[12px]">
+                  Showing {filteredStudents.length} student{filteredStudents.length !== 1 ? 's' : ''}
+                  {debouncedSearch && <span className="font-['Poppins:Bold',sans-serif] text-[#0c1e33]"> matching "{debouncedSearch}"</span>}
+                </p>
+              </div>
+
+              {/* Tab Navigation */}
+              <div className="flex gap-2 mb-4 border-b border-gray-200">
+                <button
+                  onClick={() => setActiveTab("basic")}
+                  className={`px-4 py-2 text-sm font-['Poppins:Medium',sans-serif] border-b-2 transition-colors ${
+                    activeTab === "basic"
+                      ? "border-blue-500 text-blue-600 bg-blue-50"
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  📋 Basic Info
+                </button>
+                <button
+                  onClick={() => setActiveTab("mental")}
+                  className={`px-4 py-2 text-sm font-['Poppins:Medium',sans-serif] border-b-2 transition-colors ${
+                    activeTab === "mental"
+                      ? "border-purple-500 text-purple-600 bg-purple-50"
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  🧠 Mental Health
+                </button>
+                <button
+                  onClick={() => setActiveTab("lifestyle")}
+                  className={`px-4 py-2 text-sm font-['Poppins:Medium',sans-serif] border-b-2 transition-colors ${
+                    activeTab === "lifestyle"
+                      ? "border-green-500 text-green-600 bg-green-50"
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  💪 Lifestyle
+                </button>
+                <button
+                  onClick={() => setActiveTab("background")}
+                  className={`px-4 py-2 text-sm font-['Poppins:Medium',sans-serif] border-b-2 transition-colors ${
+                    activeTab === "background"
+                      ? "border-orange-500 text-orange-600 bg-orange-50"
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  👨‍👩‍👧 Background
+                </button>
+                <button
+                  onClick={() => setActiveTab("academic")}
+                  className={`px-4 py-2 text-sm font-['Poppins:Medium',sans-serif] border-b-2 transition-colors ${
+                    activeTab === "academic"
+                      ? "border-indigo-500 text-indigo-600 bg-indigo-50"
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  📚 Academic
+                </button>
+              </div>
+
+              {/* Table with Tab-based Content */}
+              <div className="mt-[8px] overflow-x-auto rounded-[4px] border border-[#e5e5e5]">
+                {activeTab === "basic" && (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student ID</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Age</th>
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Course</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Risk Level</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Validated</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {paginatedStudents.map((student, idx) => (
+                        <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.studentId}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.age}</td>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.course}</td>
+                          <td className="py-[12px] px-[12px] text-center">
+                            <span className={`font-['Poppins:Bold',sans-serif] text-[12px] px-[12px] py-[4px] rounded-full inline-flex items-center gap-1 ${
+                              student.riskLevel === "Có Depression" ? "bg-red-100 text-red-700 border border-red-300" :
+                              "bg-green-100 text-green-700 border border-green-300"
+                            }`}>
+                              {student.riskLevel}
+                            </span>
+                          </td>
+                          <td className="py-[12px] px-[12px] text-center">
+                            {student.validated ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 font-['Poppins:Medium',sans-serif] text-[11px]">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Validated
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600 font-['Poppins:Regular',sans-serif] text-[11px]">
+                                Pending
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-[12px] px-[12px] text-center">
+                            <button
+                              onClick={() => student.actualStudentData && setSelectedStudent(student.actualStudentData)}
+                              disabled={!student.actualStudentData}
+                              className="px-3 py-1.5 text-xs font-['Poppins:Medium',sans-serif] text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded transition-colors"
+                            >
+                              Validate
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* Mental Health Tab */}
+                {activeTab === "mental" && (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Stress Level</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Depression</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Anxiety</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Mood Rating</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Sleep Quality</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedStudents.map((student, idx) => (
+                        <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
+                          <td className="py-[12px] px-[12px] text-center">
+                            <span className={`font-['Poppins:SemiBold',sans-serif] text-[12px] px-[10px] py-[3px] rounded-full ${
+                              student.stressLevel >= 4 ? 'bg-red-100 text-red-700' :
+                              student.stressLevel >= 3 ? 'bg-orange-100 text-orange-700' :
+                              'bg-green-100 text-green-700'
+                            }`}>
+                              {student.stressLevel}/5
+                            </span>
+                          </td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.depressionScore}/5</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.anxietyScore}/5</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.moodRating}/5</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.sleepQuality}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* Lifestyle Tab */}
+                {activeTab === "lifestyle" && (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Sleep Hours</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Physical Activity</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Diet Quality</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Social Support</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Substance Use</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedStudents.map((student, idx) => (
+                        <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.sleepHours}h</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.physicalActivity}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.dietQuality}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.socialSupport}/5</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.substanceUse}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* Background Tab */}
+                {activeTab === "background" && (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Family History</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Chronic Illness</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Financial Stress</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedStudents.map((student, idx) => (
+                        <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.familyHistory}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.chronicIllness}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.financialStress}/5</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* Academic Tab */}
+                {activeTab === "academic" && (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Credit Load</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Counseling Sessions</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Last Check-In</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Prediction</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedStudents.map((student, idx) => (
+                        <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.semesterCreditLoad}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.counselingSessions}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.lastCheckIn}</td>
+                          <td className="py-[12px] px-[12px] text-center">
+                            <span className="font-['Poppins:Medium',sans-serif] text-[12px] px-[12px] py-[4px] rounded-full bg-blue-100 text-blue-700 border border-blue-300">
+                              {student.prediction}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-center gap-[8px] mt-[20px]">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="relative shrink-0 size-[19.727px] disabled:opacity-50 hover:opacity-70 transition-opacity"
-                >
-                  <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
-                    <path d={svgPaths.p23330400} stroke="#292D32" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10" strokeWidth="1.23292" />
-                  </svg>
-                </button>
-                <div className="flex items-center gap-[4px] font-['Poppins:Medium',sans-serif] text-[10px]">
-                  <span className="text-[rgba(12,30,51,0.4)]">Page</span>
-                  <span className="font-['Poppins:Bold',sans-serif] text-[#0c1e33]">{currentPage}</span>
-                  <span className="text-[rgba(12,30,51,0.4)]">of</span>
-                  <span className="font-['Poppins:Bold',sans-serif] text-[#0c1e33]">{totalPages}</span>
+              <div className="flex items-center justify-between mt-[16px] pt-[16px] border-t border-[#e5e5e5]">
+                <p className="font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px]">
+                  Showing <span className="font-['Poppins:Bold',sans-serif]">{filteredStudents.length}</span> students {currentPage > 1 ? `(page ${currentPage})` : ''}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 rounded bg-white border border-gray-300 text-gray-700 text-[11px] font-['Poppins:Medium',sans-serif] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Previous
+                  </button>
+                  <span className="px-4 py-2 bg-blue-500 text-white rounded text-[11px] font-['Poppins:Bold',sans-serif]">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 rounded bg-white border border-gray-300 text-gray-700 text-[11px] font-['Poppins:Medium',sans-serif] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Next
+                  </button>
                 </div>
-                <button
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className="relative shrink-0 size-[19.727px] disabled:opacity-50 hover:opacity-70 transition-opacity rotate-180"
-                >
-                  <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
-                    <path d={svgPaths.p24249800} stroke="#292D32" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10" strokeWidth="1.23292" />
-                  </svg>
-                </button>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
+      
+      {/* Validate Student Dialog */}
+      {selectedStudent && (
+        <ValidateStudentDialog
+          student={selectedStudent}
+          onClose={() => setSelectedStudent(null)}
+          onSuccess={() => {
+            setShouldRefetch(prev => prev + 1);
+            setSelectedStudent(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -19,6 +19,7 @@ class ModelManager:
         self.performance: Dict[str, dict] = {}
         self.configs: Dict[str, dict] = {}
         self.states: Dict[str, dict] = {}
+        self.metadata: Dict[str, dict] = {}  # Store preset metadata
         self.lock = threading.Lock()
         self._load_all_presets()
 
@@ -65,6 +66,56 @@ class ModelManager:
 
     def get_state(self, preset_name: str) -> Optional[dict]:
         return self.states.get(preset_name)
+    
+    def get_metadata(self, preset_name: str) -> Optional[dict]:
+        return self.metadata.get(preset_name)
+    
+    def deploy_preset(self, preset_name: str) -> bool:
+        """Mark a preset as deployed and unmark others."""
+        preset_dir = self.base_dir / preset_name
+        state_dir = self.states_dir / preset_name
+        
+        if not preset_dir.exists():
+            return False
+        
+        try:
+            # Update state.json to mark as deployed
+            state_dir.mkdir(parents=True, exist_ok=True)
+            state_path = state_dir / "state.json"
+            
+            # Load existing state or create new one
+            if state_path.exists():
+                state_data = json.load(open(state_path))
+            else:
+                state_data = {"state": "idle"}
+            
+            # Mark this preset as deployed
+            state_data["deployed"] = True
+            
+            # Save state
+            with open(state_path, "w") as f:
+                json.dump(state_data, f, indent=2)
+            
+            self.states[preset_name] = state_data
+            
+            # Unmark all other presets
+            for other_preset in self.base_dir.iterdir():
+                if other_preset.is_dir() and other_preset.name != preset_name:
+                    other_state_dir = self.states_dir / other_preset.name
+                    other_state_path = other_state_dir / "state.json"
+                    
+                    if other_state_path.exists():
+                        other_state_data = json.load(open(other_state_path))
+                        if other_state_data.get("deployed"):
+                            other_state_data["deployed"] = False
+                            with open(other_state_path, "w") as f:
+                                json.dump(other_state_data, f, indent=2)
+                            self.states[other_preset.name] = other_state_data
+            
+            return True
+        except Exception as e:
+            print(f"Error deploying preset {preset_name}: {e}")
+            return False
 
     def _expected_features(self, preset_name: str, fallback_features: list) -> list:
         """Get expected feature columns for prediction."""
@@ -163,6 +214,17 @@ class ModelManager:
             shutil.copy(dataset_file, preset_dir / "dataset.csv")
             print("updating config", preset_name, config)
             self.update_config(preset_name, config or {})
+            
+            # Save metadata with original filename and creation time
+            metadata = {
+                "preset_name": preset_name,
+                "original_filename": dataset_file.name,
+                "created_at": pd.Timestamp.now().isoformat(),
+            }
+            metadata_path = preset_dir / "metadata.json"
+            with open(metadata_path, "w") as f:
+                json.dump(metadata, f, indent=2)
+            
             print("config updated", preset_name, config)
             return True
         except Exception:
@@ -180,6 +242,7 @@ class ModelManager:
             self.performance.pop(preset_name, None)
             self.configs.pop(preset_name, None)
             self.states.pop(preset_name, None)
+            self.metadata.pop(preset_name, None)
             return True
         except Exception:
             return False
@@ -196,6 +259,7 @@ class ModelManager:
             self.performance[preset_name] = self._load_json(preset_dir / "model_performance.json") or {}
             self.configs[preset_name] = self._load_json(preset_dir / "config.json") or {}
             self.states[preset_name] = self._load_json(self.states_dir / preset_name / "state.json") or {}
+            self.metadata[preset_name] = self._load_json(preset_dir / "metadata.json") or {}
             return True
         except Exception:
             return False

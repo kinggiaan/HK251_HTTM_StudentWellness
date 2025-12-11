@@ -55,19 +55,28 @@ export const mentalHealthService = {
     studentId: string,
     params?: ListHealthRecordsParams
   ): Promise<MentalHealthRecord[]> {
+    // TODO: Backend endpoint not implemented yet
+    // Return empty array for now to avoid 404 errors
+    console.warn('⚠️ Health records API not implemented yet, using student data instead');
+    return [];
+    
+    /* Commented out until backend implements this endpoint
     const queryParams = new URLSearchParams();
     if (params?.from) queryParams.append('from', params.from);
     if (params?.to) queryParams.append('to', params.to);
     if (params?.limit) queryParams.append('limit', params.limit.toString());
 
     const query = queryParams.toString();
-    return apiClient.get<MentalHealthRecord[]>(
-      `/students/${studentId}/health-records${query ? `?${query}` : ''}`
+    const response = await apiClient.get<{ data: MentalHealthRecord[]; pagination: any }>(
+      `/api/students/${studentId}/health-records${query ? `?${query}` : ''}`
     );
+    // Handle response format if needed, similar to students service
+    return Array.isArray(response) ? response : (response.data || []);
+    */
   },
 
   async getById(id: string): Promise<MentalHealthRecord> {
-    return apiClient.get<MentalHealthRecord>(`/health-records/${id}`);
+    return apiClient.get<MentalHealthRecord>(`/api/health-records/${id}`);
   },
 
   async create(
@@ -75,7 +84,7 @@ export const mentalHealthService = {
     input: CreateHealthRecordInput
   ): Promise<MentalHealthRecord> {
     return apiClient.post<MentalHealthRecord>(
-      `/students/${studentId}/health-records`,
+      `/api/students/${studentId}/health-records`,
       input
     );
   },
@@ -84,11 +93,11 @@ export const mentalHealthService = {
     id: string,
     input: UpdateHealthRecordInput
   ): Promise<MentalHealthRecord> {
-    return apiClient.patch<MentalHealthRecord>(`/health-records/${id}`, input);
+    return apiClient.patch<MentalHealthRecord>(`/api/health-records/${id}`, input);
   },
 
   async delete(id: string): Promise<void> {
-    return apiClient.delete(`/health-records/${id}`);
+    return apiClient.delete(`/api/health-records/${id}`);
   }
 };
 

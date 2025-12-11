@@ -8,7 +8,7 @@ export interface MentalHealthRecord {
   sleepHours: number;
   counselingSessions: number;
   lastCheckIn: string;
-  riskLevel: "low" | "moderate" | "high";
+  riskLevel: "no-depression" | "has-depression";
   notes: string;
   // Extended mental health metrics
   depressionScore: number; // 0-5
