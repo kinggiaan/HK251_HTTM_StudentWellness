@@ -6,13 +6,19 @@ import type { MentalHealthRecord as FrontendMentalHealthRecord } from '../data/m
 export function transformStudentToMentalHealthRecord(
   student: StudentWithHealthData
 ): FrontendMentalHealthRecord | null {
+  console.log('🔍 Transforming student:', student);
+  
   // Use health record if available, otherwise use student's own data
   const healthRecord = student.latestHealthRecord;
   
-  // If no health record, still create a record from student data
-  if (!healthRecord && !student.stressLevel) {
-    return null; // Skip students with no data at all
+  // Always create a record - we have at least basic student info
+  // Only skip if student object is completely empty
+  if (!student || !student.id) {
+    console.log('⚠️ Skipping - invalid student:', student);
+    return null;
   }
+  
+  console.log('✅ Student has data, transforming...');
 
   // Map backend risk levels to frontend format
   const riskLevelMap: Record<string, 'low' | 'moderate' | 'high'> = {
@@ -22,62 +28,67 @@ export function transformStudentToMentalHealthRecord(
     critical: 'high'
   };
 
-  // Map sleep quality number to string
-  const sleepQualityMap: Record<number, 'Poor' | 'Fair' | 'Good' | 'Excellent'> = {
-    1: 'Poor',
-    2: 'Poor',
-    3: 'Fair',
-    4: 'Fair',
-    5: 'Fair',
-    6: 'Good',
-    7: 'Good',
-    8: 'Good',
-    9: 'Excellent',
-    10: 'Excellent'
+  // Map sleep quality from duration string to quality
+  const getSleepQuality = (duration?: string): 'Poor' | 'Fair' | 'Good' | 'Excellent' => {
+    if (!duration) return 'Fair';
+    const lower = duration.toLowerCase();
+    if (lower.includes('less than 5')) return 'Poor';
+    if (lower.includes('5-6')) return 'Fair';
+    if (lower.includes('7-8')) return 'Good';
+    if (lower.includes('more than 8')) return 'Excellent';
+    return 'Fair';
+  };
+
+  // Map dietary habits to diet quality
+  const getDietQuality = (habits?: string): 'Poor' | 'Fair' | 'Good' | 'Excellent' => {
+    if (!habits) return 'Fair';
+    const lower = habits.toLowerCase();
+    if (lower.includes('healthy') || lower.includes('excellent')) return 'Excellent';
+    if (lower.includes('moderate') || lower.includes('balanced')) return 'Good';
+    if (lower.includes('unhealthy') || lower.includes('poor')) return 'Poor';
+    return 'Fair';
   };
 
   // Use health record data if available, otherwise use student's own data
-  const stressLevel = healthRecord?.stressLevel ?? student.stressLevel ?? 0;
-  const sleepHours = healthRecord?.sleepHours ?? student.sleepHours ?? 0;
-  const riskLevel = healthRecord?.riskLevel ?? student.riskLevel ?? 'low';
-  const riskScore = healthRecord?.riskScore ?? student.riskScore ?? 0;
-  const depressionLevel = healthRecord?.depressionLevel ?? 0;
-  const anxietyLevel = healthRecord?.anxietyLevel ?? 0;
-  const sleepQuality = healthRecord?.sleepQuality ?? 5;
+  const stressLevel = student.academic_pressure ?? healthRecord?.stressLevel ?? student.stressLevel ?? 3;
+  const sleepHours = student.sleepHours ?? healthRecord?.sleepHours ?? 7;
+  const riskLevel = student.riskLevel ?? healthRecord?.riskLevel ?? 'low';
+  const depressionScore = student.depression_predicting ?? student.depression_truth ?? healthRecord?.depressionLevel ?? 0;
+  const financialStress = student.financial_stress ?? 2;
 
-  // Parse student name (backend uses 'name' field, not firstName/lastName)
+  // Parse student name
   const studentName = student.name || `${(student as any).firstName || ''} ${(student as any).lastName || ''}`.trim() || 'Unknown';
-  const course = student.major || student.department || 'Unknown';
+  const course = student.major || student.department || student.degree || 'Unknown';
   
-  // Calculate age from dateOfBirth if available, otherwise use default
-  let age = 20; // Default age
-  if ((student as any).dateOfBirth) {
+  // Get age from student data or calculate from dateOfBirth
+  let age = student.age ?? 20;
+  if (!student.age && (student as any).dateOfBirth) {
     age = new Date().getFullYear() - new Date((student as any).dateOfBirth).getFullYear();
   }
 
   return {
-    id: healthRecord?.id || student.id,
+    id: healthRecord?.id || student.studentId || student.id,
     studentName,
     age,
     course,
-    stressLevel,
-    moodRating: 3, // Default, backend doesn't have this field yet
+    stressLevel: Number(stressLevel),
+    moodRating: student.study_satisfaction ?? 3,
     sleepHours: Number(sleepHours),
-    counselingSessions: 0, // Will need to fetch from counseling sessions
-    lastCheckIn: healthRecord?.assessmentDate || student.lastAssessment || new Date().toISOString(),
+    counselingSessions: 0,
+    lastCheckIn: healthRecord?.assessmentDate || student.lastAssessment || student.updatedAt || new Date().toISOString(),
     riskLevel: riskLevelMap[riskLevel] || 'low',
     notes: healthRecord?.notes || '',
-    depressionScore: depressionLevel,
-    anxietyScore: anxietyLevel,
-    sleepQuality: sleepQualityMap[sleepQuality] || 'Fair',
-    physicalActivity: 'Moderate', // Default, backend doesn't have this field yet
-    dietQuality: 'Good', // Default, backend doesn't have this field yet
-    socialSupport: 3, // Default, backend doesn't have this field yet
-    substanceUse: 'Never', // Default, backend doesn't have this field yet
-    familyHistory: 'No', // Default, backend doesn't have this field yet
-    chronicIllness: 'No', // Default, backend doesn't have this field yet
-    financialStress: 2, // Default, backend doesn't have this field yet
-    semesterCreditLoad: 15 // Default, backend doesn't have this field yet
+    depressionScore: Number(depressionScore),
+    anxietyScore: Number(stressLevel), // Use academic pressure as proxy for anxiety
+    sleepQuality: getSleepQuality(student.sleep_duration),
+    physicalActivity: student.work_study_hours && student.work_study_hours > 6 ? 'Low' : 'Moderate',
+    dietQuality: getDietQuality(student.dietary_habits),
+    socialSupport: 5 - Number(stressLevel), // Inverse relationship
+    substanceUse: 'Never',
+    familyHistory: student.family_his_of_mental_illness || 'No',
+    chronicIllness: 'No',
+    financialStress: Number(financialStress),
+    semesterCreditLoad: student.work_study_hours ?? 15
   };
 }
 

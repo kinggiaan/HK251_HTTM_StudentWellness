@@ -43,6 +43,8 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    console.log('🌐 API Request:', url, options.method || 'GET');
+    
     const isFormData = options.body instanceof FormData;
     const headers: HeadersInit = {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
@@ -59,6 +61,8 @@ class ApiClient {
         headers,
         credentials: 'include'
       });
+
+      console.log('📥 API Response:', response.status, url);
 
       // Handle empty responses (e.g., 204 No Content)
       if (response.status === 204) {
@@ -78,6 +82,7 @@ class ApiClient {
       }
 
       const data = await response.json();
+      console.log('📦 API Data:', data);
 
       if (!response.ok) {
         // Handle Strapi error format
@@ -92,11 +97,13 @@ class ApiClient {
 
       // Handle null or undefined data
       if (data === null || data === undefined) {
+        console.log('⚠️ API returned null/undefined data');
         return undefined as T;
       }
 
-      // Return data.data if it exists, otherwise return the whole data object
-      return (data.data !== undefined ? data.data : data) as T;
+      // For Strapi, return the entire response object (includes data and meta)
+      // The service layer will handle extracting data.data
+      return data as T;
     } catch (error) {
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         throw {

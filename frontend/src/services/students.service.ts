@@ -4,20 +4,37 @@ import { apiClient } from '../lib/api';
 
 export interface Student {
   id: string;
-  studentId: string;
+  documentId?: string;
+  studentId?: string;
   name: string; // Backend uses 'name' field
-  firstName?: string; // For compatibility
-  lastName?: string; // For compatibility
-  email: string;
+  age?: number;
+  cgpa?: number;
+  validated?: boolean;
+  city?: string;
+  academic_pressure?: number;
+  study_satisfaction?: number;
+  sleep_duration?: string;
+  dietary_habits?: string;
+  degree?: string; // First year, Second year, etc.
+  work_study_hours?: number;
+  gender?: string;
+  financial_stress?: number;
+  family_his_of_mental_illness?: string;
+  depression_truth?: number;
+  depression_predicting?: number;
+  // Legacy fields for compatibility
+  firstName?: string;
+  lastName?: string;
+  email?: string;
   phone?: string;
   dateOfBirth?: string;
   address?: string;
   enrollmentDate?: string;
   major?: string;
-  department?: string; // Backend uses 'department'
-  year?: number; // Backend uses number, not string
+  department?: string;
+  year?: number;
   gpa?: number;
-  status: 'active' | 'inactive' | 'graduated' | 'suspended';
+  status?: 'active' | 'inactive' | 'graduated' | 'suspended';
   avatar?: string;
   consultantId?: string;
   stressLevel?: number;
@@ -27,6 +44,7 @@ export interface Student {
   lastAssessment?: string;
   createdAt: string;
   updatedAt: string;
+  publishedAt?: string;
 }
 
 export interface ListStudentsParams {
@@ -76,8 +94,43 @@ export interface UpdateStudentInput {
   consultantId?: string;
 }
 
+// Helper functions to parse API data
+function parseSleepHours(sleepDuration: string): number {
+  if (!sleepDuration) return 7;
+  
+  const lowerDuration = sleepDuration.toLowerCase();
+  if (lowerDuration.includes('less than 5')) return 4;
+  if (lowerDuration.includes('5-6')) return 5.5;
+  if (lowerDuration.includes('7-8')) return 7.5;
+  if (lowerDuration.includes('more than 8')) return 9;
+  
+  // Try to extract number
+  const match = sleepDuration.match(/(\d+)/);
+  return match ? parseInt(match[1]) : 7;
+}
+
+function getRiskLevelFromDepression(depressionScore: number): 'low' | 'medium' | 'high' | 'critical' {
+  if (depressionScore === 0) return 'low';
+  if (depressionScore === 1) return 'medium';
+  return 'high';
+}
+
+function parseYear(degree: string): number {
+  if (!degree) return 1;
+  
+  const lowerDegree = degree.toLowerCase();
+  if (lowerDegree.includes('first')) return 1;
+  if (lowerDegree.includes('second')) return 2;
+  if (lowerDegree.includes('third')) return 3;
+  if (lowerDegree.includes('fourth') || lowerDegree.includes('final')) return 4;
+  
+  return 1;
+}
+
 export const studentsService = {
   async list(params?: ListStudentsParams): Promise<ListStudentsResponse> {
+    console.log('📚 Fetching students with params:', params);
+    
     // Strapi uses pagination[page], pagination[pageSize] format
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('pagination[page]', params.page.toString());
@@ -102,12 +155,41 @@ export const studentsService = {
     
     // Strapi returns { data: [], meta: { pagination: {...} } }
     if (response && 'data' in response) {
-      const students = Array.isArray(response.data) ? response.data.map((item: any) => ({
-        id: item.id || item.documentId,
-        documentId: item.documentId,
-        ...item.attributes,
-        ...(typeof item !== 'object' || !item.attributes ? item : {})
-      })) : [];
+      const students = Array.isArray(response.data) ? response.data.map((item: any) => {
+        // Handle both flat structure and nested attributes structure
+        const flatData = item.attributes || item;
+        return {
+          id: String(item.id || item.documentId),
+          documentId: item.documentId,
+          studentId: flatData.studentId || String(item.id || item.documentId),
+          name: flatData.name || 'Unknown',
+          age: flatData.age,
+          cgpa: flatData.cgpa,
+          gpa: flatData.cgpa, // Map cgpa to gpa for compatibility
+          validated: flatData.validated,
+          city: flatData.city,
+          academic_pressure: flatData.academic_pressure,
+          study_satisfaction: flatData.study_satisfaction,
+          sleep_duration: flatData.sleep_duration,
+          dietary_habits: flatData.dietary_habits,
+          degree: flatData.degree,
+          work_study_hours: flatData.work_study_hours,
+          gender: flatData.gender,
+          financial_stress: flatData.financial_stress,
+          family_his_of_mental_illness: flatData.family_his_of_mental_illness,
+          depression_truth: flatData.depression_truth,
+          depression_predicting: flatData.depression_predicting,
+          createdAt: flatData.createdAt || item.createdAt || new Date().toISOString(),
+          updatedAt: flatData.updatedAt || item.updatedAt || new Date().toISOString(),
+          publishedAt: flatData.publishedAt || item.publishedAt,
+          // Map to legacy fields
+          stressLevel: flatData.academic_pressure || flatData.financial_stress,
+          sleepHours: flatData.sleep_duration ? parseSleepHours(flatData.sleep_duration) : undefined,
+          riskLevel: flatData.depression_predicting ? getRiskLevelFromDepression(flatData.depression_predicting) : 'low',
+          year: flatData.degree ? parseYear(flatData.degree) : undefined,
+          status: flatData.validated ? 'active' : 'inactive'
+        };
+      }) : [];
       
       const pagination = response.meta?.pagination || {};
       return {

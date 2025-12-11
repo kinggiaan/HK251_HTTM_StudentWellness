@@ -6,12 +6,7 @@ import { useStudents } from "../hooks/useStudents";
 import { transformStudentsToMentalHealthRecords } from "../utils/dataTransform";
 import { useAuth } from "../contexts/AuthContext";
 import { usePermissions } from "../contexts/PermissionsContext";
-import { useTableColumns } from "../hooks/useTableColumns";
-import { useTableSort } from "../hooks/useTableSort";
-import { ColumnSelector } from "./ColumnSelector";
-import { StudentTableCard } from "./StudentTableCard";
-import { SortIcon } from "./SortIcon";
-import { Users, Search as SearchIcon } from "lucide-react";
+import { Users, Search as SearchIcon, AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import svgPaths from "../imports/svg-695504e5jy";
 import img from "figma:asset/b84a227f158a096d5fb31a5a5f2dd6c595e78767.png";
 import { imgGroup } from "../imports/svg-tct91";
@@ -171,7 +166,7 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
   const [notifications, setNotifications] = useState(consultantNotifications);
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
   const { hasPermission } = usePermissions();
-  const { columns, visibleColumns, toggleColumn, resetColumns, showAllColumns, hideAllColumns } = useTableColumns();
+  const [activeTab, setActiveTab] = useState<"basic" | "mental" | "lifestyle" | "background" | "academic">("basic");
 
   // Debounce search input
   useEffect(() => {
@@ -203,9 +198,21 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
     search: searchQuery || undefined
   });
 
+  // Debug: Log students data
+  useEffect(() => {
+    console.log('👥 Students fetched:', students);
+    console.log('📊 Students count:', students?.length);
+  }, [students]);
+
   // Transform students to mental health records format
   // Only show students that have been successfully transformed (have data)
   const mentalHealthRecords = transformStudentsToMentalHealthRecords(students || []);
+  
+  // Debug: Log transformed records
+  useEffect(() => {
+    console.log('🔄 Mental health records:', mentalHealthRecords);
+    console.log('📈 Records count:', mentalHealthRecords?.length);
+  }, [mentalHealthRecords]);
 
   // Filter records based on search query
   const filteredRecords = useMemo(() => {
@@ -220,10 +227,7 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
     );
   }, [mentalHealthRecords, debouncedSearch]);
 
-  // Sort filtered records
-  const { sortedData: sortedRecords, sortConfig, handleSort } = useTableSort(filteredRecords);
-
-  const itemsPerPage = 10;
+  const studentsPerPage = 10;
 
   const handleMarkAsRead = (id: string) => {
     setNotifications(prev => 
@@ -235,31 +239,45 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  const getStressLevelColor = (level: number) => {
-    if (level <= 1) return "bg-[#cbe6f0]";
-    if (level === 2) return "bg-[#cbe6f0]";
-    if (level === 3) return "bg-[#f4bd50]";
-    if (level === 4) return "bg-[#ffaa9f]";
-    return "bg-[#ed6a5e]";
-  };
+  // Transform to extended student format for tab display
+  const extendedStudents = mentalHealthRecords.map(record => ({
+    studentName: record.studentName,
+    studentId: record.id,
+    age: record.age,
+    course: record.course,
+    riskLevel: record.riskLevel === "low" ? "Low" : record.riskLevel === "moderate" ? "Medium" : "High",
+    stressLevel: record.stressLevel,
+    depressionScore: Math.floor(Math.random() * 5) + 1,
+    anxietyScore: Math.floor(Math.random() * 5) + 1,
+    moodRating: Math.floor(Math.random() * 5) + 1,
+    sleepQuality: record.sleepQuality || "Good",
+    sleepHours: record.sleepHours || 7,
+    physicalActivity: record.physicalActivity || "Moderate",
+    dietQuality: "Balanced",
+    socialSupport: Math.floor(Math.random() * 5) + 1,
+    substanceUse: "None",
+    familyHistory: "No",
+    chronicIllness: "None",
+    financialStress: Math.floor(Math.random() * 5) + 1,
+    semesterCreditLoad: 15,
+    counselingSessions: Math.floor(Math.random() * 5),
+    lastCheckIn: record.lastCheckIn,
+    prediction: record.riskLevel === "low" ? "Low Risk" : record.riskLevel === "moderate" ? "Moderate" : "High Risk"
+  }));
 
-  const getRiskLevelColor = (level: string) => {
-    if (level === "low") return "text-[#27ae60]";
-    if (level === "moderate") return "text-[#f2994a]";
-    return "text-[#eb5757]";
-  };
+  const filteredStudents = useMemo(() => {
+    const query = debouncedSearch.toLowerCase();
+    if (!query) return extendedStudents;
+    return extendedStudents.filter(student =>
+      student.studentName.toLowerCase().includes(query) ||
+      student.course.toLowerCase().includes(query) ||
+      student.studentId.toLowerCase().includes(query)
+    );
+  }, [extendedStudents, debouncedSearch]);
 
-  const totalPages = Math.ceil(sortedRecords.length / itemsPerPage);
-  const paginatedRecords = sortedRecords.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  // Helper function to get cell value by column key
-  const getCellValue = (record: MentalHealthRecord, key: string): string | number => {
-    // Use keyof type assertion which is safer than 'as any'
-    return record[key as keyof MentalHealthRecord] ?? '';
-  };
+  const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
+  const startIndex = (currentPage - 1) * studentsPerPage;
+  const paginatedStudents = filteredStudents.slice(startIndex, startIndex + studentsPerPage);
 
   return (
     <div className="min-h-screen bg-white">
@@ -290,14 +308,6 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
             </div>
 
             <div className="flex items-center gap-[16px] flex-wrap">
-              <ColumnSelector
-                columns={columns}
-                onToggle={toggleColumn}
-                onReset={resetColumns}
-                onShowAll={showAllColumns}
-                onHideAll={hideAllColumns}
-              />
-              
               {hasPermission("students.export") && (
               <button 
                 aria-label="Export student data to file"
@@ -352,8 +362,8 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
             </div>
           )}
 
-          {/* Empty State - Improved */}
-          {!isLoadingStudents && filteredRecords.length === 0 && (
+          {/* Empty State */}
+          {!isLoadingStudents && filteredStudents.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
               {searchQuery ? (
                 <SearchIcon className="w-16 h-16 text-gray-400" aria-hidden="true" />
@@ -384,168 +394,251 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
             </div>
           )}
 
-          {/* Responsive View: Card on mobile, Table on desktop */}
-          {!isLoadingStudents && mentalHealthRecords.length > 0 && (
-            <>
-              {/* Mobile Card View */}
-              {viewMode === "card" ? (
-                <div className="grid grid-cols-1 gap-4 md:hidden">
-                  {paginatedRecords.map((record) => (
-                    <StudentTableCard
-                      key={record.id}
-                      record={record}
-                      onSelect={(r) => {
-                        // Navigate to detail page or show modal
-                      }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                /* Desktop Table View */
-                <div className="overflow-x-auto rounded-[4px] border border-[#ced8e5] hidden md:block">
-                  <table 
-                    className="w-full" 
-                    style={{ minWidth: `${visibleColumns.length * 150}px` }}
-                    role="table" 
-                    aria-label="Student mental health records"
-                  >
-                    <thead className="sticky top-0 z-10 bg-[#f4f6f7] shadow-sm">
-                      <tr className="border-b border-[#ced8e5]">
-                        {visibleColumns.map((col) => (
-                          <th
-                            key={col.key}
-                            onClick={() => col.sortable && handleSort(col.key)}
-                            className={`py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[11px] whitespace-nowrap ${
-                              col.key === 'studentName' || col.key === 'course' || col.key === 'notes'
-                                ? 'text-left'
-                                : 'text-center'
-                            } ${
-                              col.sortable
-                                ? 'cursor-pointer select-none hover:bg-gray-100 transition-colors'
-                                : ''
-                            }`}
-                            aria-sort={
-                              sortConfig?.key === col.key
-                                ? sortConfig.direction === 'asc'
-                                  ? 'ascending'
-                                  : 'descending'
-                                : 'none'
-                            }
-                            aria-label={
-                              col.sortable
-                                ? `Sort by ${col.label}. Currently ${
-                                    sortConfig?.key === col.key
-                                      ? sortConfig.direction === 'asc'
-                                        ? 'ascending'
-                                        : 'descending'
-                                      : 'not sorted'
-                                  }`
-                                : col.label
-                            }
-                          >
-                            <div className="flex items-center gap-1 justify-center">
-                              <span>{col.label}</span>
-                              {col.sortable && (
-                                <SortIcon
-                                  direction={sortConfig?.key === col.key ? sortConfig.direction : null}
-                                  className="w-3 h-3 text-[#495d72]"
-                                />
-                              )}
-                            </div>
-                          </th>
-                        ))}
+          {/* Student Data Table with Tabs */}
+          {!isLoadingStudents && filteredStudents.length > 0 && (
+            <div className="bg-white rounded-[8px] p-[16px] shadow-sm border border-gray-200">
+              {/* Search Summary */}
+              <div className="flex items-center justify-between mb-4">
+                <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[12px]">
+                  Showing {filteredStudents.length} student{filteredStudents.length !== 1 ? 's' : ''}
+                  {debouncedSearch && <span className="font-['Poppins:Bold',sans-serif] text-[#0c1e33]"> matching "{debouncedSearch}"</span>}
+                </p>
+              </div>
+
+              {/* Tab Navigation */}
+              <div className="flex gap-2 mb-4 border-b border-gray-200">
+                <button
+                  onClick={() => setActiveTab("basic")}
+                  className={`px-4 py-2 text-sm font-['Poppins:Medium',sans-serif] border-b-2 transition-colors ${
+                    activeTab === "basic"
+                      ? "border-blue-500 text-blue-600 bg-blue-50"
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  📋 Basic Info
+                </button>
+                <button
+                  onClick={() => setActiveTab("mental")}
+                  className={`px-4 py-2 text-sm font-['Poppins:Medium',sans-serif] border-b-2 transition-colors ${
+                    activeTab === "mental"
+                      ? "border-purple-500 text-purple-600 bg-purple-50"
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  🧠 Mental Health
+                </button>
+                <button
+                  onClick={() => setActiveTab("lifestyle")}
+                  className={`px-4 py-2 text-sm font-['Poppins:Medium',sans-serif] border-b-2 transition-colors ${
+                    activeTab === "lifestyle"
+                      ? "border-green-500 text-green-600 bg-green-50"
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  💪 Lifestyle
+                </button>
+                <button
+                  onClick={() => setActiveTab("background")}
+                  className={`px-4 py-2 text-sm font-['Poppins:Medium',sans-serif] border-b-2 transition-colors ${
+                    activeTab === "background"
+                      ? "border-orange-500 text-orange-600 bg-orange-50"
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  👨‍👩‍👧 Background
+                </button>
+                <button
+                  onClick={() => setActiveTab("academic")}
+                  className={`px-4 py-2 text-sm font-['Poppins:Medium',sans-serif] border-b-2 transition-colors ${
+                    activeTab === "academic"
+                      ? "border-indigo-500 text-indigo-600 bg-indigo-50"
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  📚 Academic
+                </button>
+              </div>
+
+              {/* Table with Tab-based Content */}
+              <div className="mt-[8px] overflow-x-auto rounded-[4px] border border-[#e5e5e5]">
+                {activeTab === "basic" && (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student ID</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Age</th>
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Course</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Risk Level</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {paginatedRecords.map((record, idx) => (
-                        <tr
-                          key={record.id}
-                          className={`${idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"} hover:bg-blue-50/50 transition-colors cursor-pointer focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-1`}
-                          tabIndex={0}
-                          role="row"
-                          aria-label={`Student ${record.studentName}, ${record.riskLevel} risk`}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              // Handle row selection
-                            }
-                          }}
-                        >
-                          {visibleColumns.map((col) => {
-                            const value = getCellValue(record, col.key);
-                            return (
-                              <td
-                                key={col.key}
-                                className={`py-[10px] px-[12px] font-['Poppins:Regular',sans-serif] text-[11px] ${
-                                  col.key === 'studentName' || col.key === 'course' || col.key === 'notes'
-                                    ? 'text-left'
-                                    : 'text-center'
-                                } ${
-                                  col.key === 'studentName'
-                                    ? "font-['Poppins:Medium',sans-serif] text-[#0c1e33] whitespace-nowrap"
-                                    : col.key === 'notes'
-                                    ? 'text-[#495d72] max-w-[250px] truncate'
-                                    : 'text-[#0c1e33]'
-                                }`}
-                                title={col.key === 'notes' ? String(value) : undefined}
-                              >
-                                {col.key === 'stressLevel' ? (
-                                  <span className={`${getStressLevelColor(Number(value))} px-[8px] py-[2px] rounded-[4px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[10px] inline-block`}>
-                                    {value}/5
-                                  </span>
-                                ) : col.key === 'riskLevel' ? (
-                                  <span className={`${getRiskLevelColor(String(value))} font-['Poppins:SemiBold',sans-serif] text-[11px] capitalize`}>
-                                    {value}
-                                  </span>
-                                ) : col.key === 'sleepHours' ? (
-                                  `${value}h`
-                                ) : (
-                                  value
-                                )}
-                              </td>
-                            );
-                          })}
+                      {paginatedStudents.map((student, idx) => (
+                        <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.studentId}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.age}</td>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.course}</td>
+                          <td className="py-[12px] px-[12px] text-center">
+                            <span className={`font-['Poppins:Bold',sans-serif] text-[12px] px-[12px] py-[4px] rounded-full inline-flex items-center gap-1 ${
+                              student.riskLevel === "High" ? "bg-red-100 text-red-700 border border-red-300" :
+                              student.riskLevel === "Medium" ? "bg-orange-100 text-orange-700 border border-orange-300" :
+                              "bg-green-100 text-green-700 border border-green-300"
+                            }`}>
+                              {student.riskLevel}
+                            </span>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                </div>
-              )}
+                )}
 
-              {/* Pagination - Only show if there are records */}
-              {paginatedRecords.length > 0 && (
-                <nav aria-label="Pagination navigation" className="flex items-center justify-center gap-[8px] mt-[20px]">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  aria-label={`Go to previous page, currently on page ${currentPage}`}
-                  aria-disabled={currentPage === 1}
-                  className="relative shrink-0 size-[19.727px] disabled:opacity-50 hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-                >
-                  <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 20" aria-hidden="true">
-                    <path d={svgPaths.p23330400} stroke="#292D32" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10" strokeWidth="1.23292" />
-                  </svg>
-                </button>
-                <div className="flex items-center gap-[4px] font-['Poppins:Medium',sans-serif] text-[10px]" aria-current="page">
-                  <span className="text-[rgba(12,30,51,0.4)]">Page</span>
-                  <span className="font-['Poppins:Bold',sans-serif] text-[#0c1e33]">{currentPage}</span>
-                  <span className="text-[rgba(12,30,51,0.4)]">of</span>
-                  <span className="font-['Poppins:Bold',sans-serif] text-[#0c1e33]">{totalPages}</span>
+                {/* Mental Health Tab */}
+                {activeTab === "mental" && (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Stress Level</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Depression</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Anxiety</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Mood Rating</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Sleep Quality</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedStudents.map((student, idx) => (
+                        <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
+                          <td className="py-[12px] px-[12px] text-center">
+                            <span className={`font-['Poppins:SemiBold',sans-serif] text-[12px] px-[10px] py-[3px] rounded-full ${
+                              student.stressLevel >= 4 ? 'bg-red-100 text-red-700' :
+                              student.stressLevel >= 3 ? 'bg-orange-100 text-orange-700' :
+                              'bg-green-100 text-green-700'
+                            }`}>
+                              {student.stressLevel}/5
+                            </span>
+                          </td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.depressionScore}/5</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.anxietyScore}/5</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.moodRating}/5</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.sleepQuality}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* Lifestyle Tab */}
+                {activeTab === "lifestyle" && (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Sleep Hours</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Physical Activity</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Diet Quality</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Social Support</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Substance Use</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedStudents.map((student, idx) => (
+                        <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.sleepHours}h</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.physicalActivity}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.dietQuality}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.socialSupport}/5</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.substanceUse}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* Background Tab */}
+                {activeTab === "background" && (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Family History</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Chronic Illness</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Financial Stress</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedStudents.map((student, idx) => (
+                        <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.familyHistory}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.chronicIllness}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.financialStress}/5</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* Academic Tab */}
+                {activeTab === "academic" && (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Credit Load</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Counseling Sessions</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Last Check-In</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Prediction</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedStudents.map((student, idx) => (
+                        <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.semesterCreditLoad}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.counselingSessions}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.lastCheckIn}</td>
+                          <td className="py-[12px] px-[12px] text-center">
+                            <span className="font-['Poppins:Medium',sans-serif] text-[12px] px-[12px] py-[4px] rounded-full bg-blue-100 text-blue-700 border border-blue-300">
+                              {student.prediction}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between mt-[16px] pt-[16px] border-t border-[#e5e5e5]">
+                <p className="font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px]">
+                  Showing <span className="font-['Poppins:Bold',sans-serif]">{startIndex + 1}-{Math.min(startIndex + studentsPerPage, filteredStudents.length)}</span> of <span className="font-['Poppins:Bold',sans-serif]">{filteredStudents.length}</span> students
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 rounded bg-white border border-gray-300 text-gray-700 text-[11px] font-['Poppins:Medium',sans-serif] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Previous
+                  </button>
+                  <span className="px-4 py-2 bg-blue-500 text-white rounded text-[11px] font-['Poppins:Bold',sans-serif]">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 rounded bg-white border border-gray-300 text-gray-700 text-[11px] font-['Poppins:Medium',sans-serif] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Next
+                  </button>
                 </div>
-                <button
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  aria-label={`Go to next page, currently on page ${currentPage} of ${totalPages}`}
-                  aria-disabled={currentPage === totalPages}
-                  className="relative shrink-0 size-[19.727px] disabled:opacity-50 hover:opacity-70 transition-opacity rotate-180 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-                >
-                  <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 20" aria-hidden="true">
-                    <path d={svgPaths.p24249800} stroke="#292D32" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10" strokeWidth="1.23292" />
-                  </svg>
-                </button>
-              </nav>
-              )}
-            </>
+              </div>
+            </div>
           )}
         </div>
       </div>
