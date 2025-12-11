@@ -29,6 +29,17 @@ class ModelManager:
         except Exception:
             return None
 
+    def _mark_not_trained(self, preset_name: str) -> None:
+        """Ensure state file reflects a missing/absent trained model."""
+        state_dir = self.states_dir / preset_name
+        state_dir.mkdir(parents=True, exist_ok=True)
+        state_path = state_dir / "state.json"
+        state_data = self._load_json(state_path) or {}
+        state_data["state"] = "not-trained"
+        with open(state_path, "w") as f:
+            json.dump(state_data, f, indent=2)
+        self.states[preset_name] = state_data
+
     def _load_all_presets(self):
         if not self.base_dir.exists():
             return
@@ -255,6 +266,10 @@ class ModelManager:
             model_path = preset_dir / "model.pkl"
             if model_path.exists():
                 self.models[preset_name] = joblib.load(model_path)
+            else:
+                # Model file missing: clear any cached model and mark preset as not trained
+                self.models.pop(preset_name, None)
+                self._mark_not_trained(preset_name)
             self.analysis[preset_name] = self._load_json(preset_dir / "dataset_analysis.json") or {}
             self.performance[preset_name] = self._load_json(preset_dir / "model_performance.json") or {}
             self.configs[preset_name] = self._load_json(preset_dir / "config.json") or {}

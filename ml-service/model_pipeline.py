@@ -255,16 +255,24 @@ def apply_preprocessing_maps(df_in):
 
 
 def analyze_features(X_train, y_train, target_cols, plots_dir, dataset_results):
-    for feature_to_inspect in X_train.columns.tolist():
+    # Use a copy to mirror the reference visualization script
+    X_train_visual = X_train.copy()
+
+    for feature_to_inspect in X_train_visual.columns.tolist():
         for target in target_cols:
-            if feature_to_inspect in ["Age", "CGPA"]:
+            # Use boxplots for selected numeric features, grouped bars for categoricals
+            if feature_to_inspect in ["Age", "CGPA", "Work/Study Hours"]:
                 labels = sorted(y_train[target].unique())
-                data = [X_train.loc[y_train[target] == lbl, feature_to_inspect] for lbl in labels]
+                data = [
+                    X_train_visual.loc[y_train[target] == lbl, feature_to_inspect]
+                    for lbl in labels
+                ]
                 fig, ax = plt.subplots(figsize=(6, 4))
                 ax.boxplot(data, labels=labels)
                 ax.set_title(f"{feature_to_inspect} by {target}")
                 ax.set_xlabel(target)
                 ax.set_ylabel(feature_to_inspect)
+
                 box_entry = {
                     "feature": schema_field_name(feature_to_inspect),
                     "target": schema_field_name(target),
@@ -285,33 +293,60 @@ def analyze_features(X_train, y_train, target_cols, plots_dir, dataset_results):
                     schema_field_name(target),
                 )
             else:
-                ct_prop = pd.crosstab(
-                    X_train[feature_to_inspect], y_train[target], normalize="columns"
+                ct_counts = pd.crosstab(
+                    X_train_visual[feature_to_inspect],
+                    y_train[target],
                 )
-                fig, ax = plt.subplots(figsize=(7, 4))
-                im = ax.imshow(ct_prop.values, cmap="Blues")
-                ax.set_title(f"{feature_to_inspect} vs {target} (proportion)")
-                ax.set_xlabel(target)
-                ax.set_ylabel(feature_to_inspect)
-                ax.set_xticks(range(ct_prop.shape[1]))
-                ax.set_yticks(range(ct_prop.shape[0]))
-                ax.set_xticklabels(ct_prop.columns)
-                ax.set_yticklabels(ct_prop.index)
-                for (i, j), val in np.ndenumerate(ct_prop.values):
-                    ax.text(j, i, f"{val:.2f}", ha="center", va="center", color="black")
-                fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-                prop_entry = {
+                class_labels = sorted(y_train[target].unique())
+                ct_counts = ct_counts.reindex(columns=class_labels).fillna(0)
+
+                x = np.arange(len(ct_counts.index))
+                width = 0.35
+
+                fig, ax = plt.subplots(figsize=(8, 4))
+
+                bars = []
+                for i, cls in enumerate(class_labels):
+                    offset = (i - (len(class_labels) - 1) / 2) * width
+                    b = ax.bar(
+                        x + offset,
+                        ct_counts[cls].values,
+                        width,
+                        label=str(cls),
+                    )
+                    bars.append(b)
+
+                ax.set_title(f"{feature_to_inspect} vs {target} (counts)")
+                ax.set_xlabel(feature_to_inspect)
+                ax.set_ylabel("Count")
+                ax.set_xticks(x)
+                ax.set_xticklabels(ct_counts.index, rotation=45, ha="right")
+                ax.legend(title=target)
+
+                for b in bars:
+                    for rect in b:
+                        height = rect.get_height()
+                        ax.text(
+                            rect.get_x() + rect.get_width() / 2,
+                            height,
+                            f"{int(height)}",
+                            ha="center",
+                            va="bottom",
+                            fontsize=8,
+                        )
+
+                counts_entry = {
                     "feature": schema_field_name(feature_to_inspect),
                     "target": schema_field_name(target),
-                    "type": "proportion_matrix",
-                    "proportions": serialize_value(ct_prop.to_dict()),
+                    "type": "count_bar",
+                    "counts": serialize_value(ct_counts.to_dict()),
                 }
-                append_dataset_result(dataset_results, "feature_proportions", prop_entry)
+                append_dataset_result(dataset_results, "feature_proportions", counts_entry)
                 plt.tight_layout()
                 save_plot(
                     fig,
                     plots_dir,
-                    "feature_prop",
+                    "feature_counts",
                     schema_field_name(feature_to_inspect),
                     schema_field_name(target),
                 )
@@ -559,9 +594,7 @@ def run_dataset_analysis(preset_name: str, base_dir: str = DATA_MODEL_BASE_DIR):
     train_df = pd.concat([X_train, y_train], axis=1)
     analyze_columns(train_df, target_cols, plots_dir, dataset_results)
 
-    # Apply preprocessing maps for feature analysis visualization only
-    X_train_mapped = apply_preprocessing_maps(X_train)
-    analyze_features(X_train_mapped, y_train, target_cols, plots_dir, dataset_results)
+    analyze_features(X_train, y_train, target_cols, plots_dir, dataset_results)
 
     dataset_analysis_path = preset_dir / "dataset_analysis.json"
     save_json(dataset_results, dataset_analysis_path, f"Dataset analysis saved to {dataset_analysis_path}")
