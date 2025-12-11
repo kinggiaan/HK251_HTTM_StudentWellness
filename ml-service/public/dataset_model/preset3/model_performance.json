@@ -1,21 +1,21 @@
 {
   "test_metrics": {
     "depression_truth": {
-      "acc": 0.7905599425699928,
-      "precision": 0.7863561301878497,
-      "recall": 0.7805021824700575,
-      "f1": 0.7828335651603604
+      "acc": 0.789124192390524,
+      "precision": 0.7843430747282643,
+      "recall": 0.7801041668320654,
+      "f1": 0.7818866328198003
     }
   },
   "confusion_matrices": {
     "depression_truth": [
       [
-        1677,
-        657
+        1691,
+        643
       ],
       [
-        510,
-        2728
+        532,
+        2706
       ]
     ]
   },
@@ -31,46 +31,46 @@
       "top_k": [
         {
           "name": "cat__Sleep Duration_0.0",
-          "importance": 0.13664199192462986
+          "importance": 0.13601390758187532
         },
         {
           "name": "cat__Dietary Habits_2.0",
-          "importance": 0.05909600717810679
+          "importance": 0.05942126514131903
         },
         {
           "name": "cat__Gender_1.0",
-          "importance": 0.029609690444145374
+          "importance": 0.029015253476895514
         },
         {
           "name": "cat__Dietary Habits_0.0",
-          "importance": 0.020311799013010345
+          "importance": 0.021444593988335613
         },
         {
           "name": "cat__Dietary Habits_1.0",
-          "importance": 0.016128308658591318
+          "importance": 0.016094661283086613
         },
         {
           "name": "cat__Sleep Duration_2.0",
-          "importance": 0.013021534320323042
+          "importance": 0.013492597577388993
         },
         {
           "name": "cat__Sleep Duration_3.0",
-          "importance": 0.00640421713772994
+          "importance": 0.006751906684611964
         },
         {
           "name": "cat__Sleep Duration_1.0",
-          "importance": 0.005383580080753713
-        },
-        {
-          "name": "cat__Gender_0.0",
-          "importance": 0.002243158366980735
+          "importance": 0.002792732166891021
         },
         {
           "name": "cat__Family History of Mental Illness_0.0",
-          "importance": -0.0008636159712875569
+          "importance": 0.0003364737550471342
+        },
+        {
+          "name": "cat__Gender_0.0",
+          "importance": -0.0005607895917451422
         }
       ]
     }
   ],
-  "model_path": "public\\dataset_model\\preset2\\model.pkl"
+  "model_path": "public\\dataset_model\\preset3\\model.pkl"
 }

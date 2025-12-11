@@ -121,6 +121,26 @@ export default factories.createCoreController('api::preset.preset', ({ strapi })
     }
   },
 
+  async getMlMetadata(ctx) {
+    const { preset_name: presetName } = ctx.params;
+    try {
+      const data = await strapi.service('api::preset.preset').getMlMetadata(presetName);
+      ctx.body = data;
+    } catch (error) {
+      handleError(ctx, error);
+    }
+  },
+
+  async deployMlPreset(ctx) {
+    const { preset_name: presetName } = ctx.params;
+    try {
+      const data = await strapi.service('api::preset.preset').deployMlPreset(presetName);
+      ctx.body = data;
+    } catch (error) {
+      handleError(ctx, error);
+    }
+  },
+
   async mlPredict(ctx) {
     const { preset_name: presetName } = ctx.params;
     try {

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 interface CreatePresetDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onPresetCreated: () => void;
+  onPresetCreated: (presetName: string) => void;
 }
 
 // Default features available
@@ -124,7 +124,18 @@ export function CreatePresetDialog({ open, onOpenChange, onPresetCreated }: Crea
 
       const result = await mlService.createPreset(formData);
       
-      toast.success(`Preset "${result.preset_name}" created successfully!`);
+      const createdPresetName = result.preset_name;
+      
+      toast.success(`Preset "${createdPresetName}" created successfully!`);
+      
+      // Automatically start training for the new preset
+      try {
+        await mlService.retrain(createdPresetName);
+        toast.info(`Training started for "${createdPresetName}"...`);
+      } catch (retrainError: any) {
+        console.error('Failed to start training:', retrainError);
+        toast.warning(`Preset created but failed to start training. Please manually retrain.`);
+      }
       
       // Reset form
       setPresetName("");
@@ -136,9 +147,9 @@ export function CreatePresetDialog({ open, onOpenChange, onPresetCreated }: Crea
       setClassWeight("balanced");
       setJsonConfig("{}");
       
-      // Close dialog and notify parent
+      // Close dialog and notify parent with preset name
       onOpenChange(false);
-      onPresetCreated();
+      onPresetCreated(createdPresetName);
     } catch (error: any) {
       toast.error(error.message || "Failed to create preset");
     } finally {

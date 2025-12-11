@@ -172,6 +172,24 @@ export default factories.createCoreService('api::preset.preset', ({strapi}) => {
       }
     },
 
+    async getMlMetadata(presetName: string) {
+      try {
+        const res = await client.get(`/presets/${presetName}/metadata`);
+        return res.data;
+      } catch (error) {
+        throw normalizeAxiosError(error as AxiosError | Error);
+      }
+    },
+
+    async deployMlPreset(presetName: string) {
+      try {
+        const res = await client.post(`/presets/${presetName}/deploy`);
+        return res.data;
+      } catch (error) {
+        throw normalizeAxiosError(error as AxiosError | Error);
+      }
+    },
+
     async mlPredict(presetName: string, features: Record<string, any>) {
       try {
         const res = await client.post(

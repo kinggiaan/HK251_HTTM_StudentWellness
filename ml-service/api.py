@@ -158,6 +158,32 @@ async def list_presets(manager: ModelManager = Depends(get_manager)):
     return {"presets": names}
 
 
+@router.get("/presets/{preset_name}/metadata", tags=["presets"], summary="Get metadata for a preset")
+async def get_preset_metadata(preset_name: str, manager: ModelManager = Depends(get_manager)):
+    validate_preset_name(preset_name)
+    metadata = manager.get_metadata(preset_name)
+    if metadata is None:
+        raise HTTPException(status_code=404, detail="Metadata not found")
+    return metadata
+
+
+@router.post("/presets/{preset_name}/deploy", tags=["presets"], summary="Deploy a preset (mark as active for predictions)")
+async def deploy_preset(preset_name: str, manager: ModelManager = Depends(get_manager)):
+    validate_preset_name(preset_name)
+    if not (manager.base_dir / preset_name).exists():
+        raise HTTPException(status_code=404, detail="Preset not found")
+    
+    # Check if preset is trained (has model)
+    model_path = Path(manager.base_dir) / preset_name / "model.pkl"
+    if not model_path.exists():
+        raise HTTPException(status_code=400, detail="Cannot deploy untrained preset")
+    
+    ok = manager.deploy_preset(preset_name)
+    if not ok:
+        raise HTTPException(status_code=500, detail="Failed to deploy preset")
+    return {"success": True, "message": f"Preset '{preset_name}' deployed successfully"}
+
+
 @router.post("/presets/{preset_name}/predict", tags=["prediction"], summary="Run prediction using a preset model")
 async def predict(preset_name: str, features: dict, manager: ModelManager = Depends(get_manager)):
     validate_preset_name(preset_name)

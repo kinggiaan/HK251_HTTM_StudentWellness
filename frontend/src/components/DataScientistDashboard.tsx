@@ -8,6 +8,9 @@ import { ModelConfigDialog } from "./ModelConfigDialog";
 import { NotificationPanel } from "./NotificationPanel";
 import { extendedMockStudents } from "../data/mockStudentsExtended";
 import { MentalHealthRecord, mockMentalHealthRecords } from "../data/mockMentalHealth";
+import { useStudents } from "../hooks/useStudents";
+import { transformStudentsToMentalHealthRecords } from "../utils/dataTransform";
+import type { Student } from "../services/students.service";
 import { dataScientistNotifications } from "../data/mockNotificationsByRole";
 import { DatasetManagement } from "./DatasetManagementSection";
 import { listDatasets } from "../services/datasets";
@@ -278,14 +281,45 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
   const [activeTab, setActiveTab] = useState<"basic" | "mental" | "lifestyle" | "background" | "academic">("basic");
   const studentsPerPage = 5;
   
-  // Calculate statistics from mock data
-  const totalStudents = extendedMockStudents.length;
-  const highRisk = mockMentalHealthRecords.filter(r => r.riskLevel === "high").length;
-  const moderateRisk = mockMentalHealthRecords.filter(r => r.riskLevel === "moderate").length;
-  const lowRisk = mockMentalHealthRecords.filter(r => r.riskLevel === "low").length;
+  // Load students from API
+  const { students, isLoading: studentsLoading } = useStudents();
+  const [performance, setPerformance] = useState<MLPerformance | null>(null);
+  const [performanceLoading, setPerformanceLoading] = useState(false);
   
-  const avgStress = (mockMentalHealthRecords.reduce((sum, r) => sum + r.stressLevel, 0) / totalStudents).toFixed(1);
-  const avgSleep = (mockMentalHealthRecords.reduce((sum, r) => sum + r.sleepHours, 0) / totalStudents).toFixed(1);
+  // Load performance metrics when latestTrained changes
+  useEffect(() => {
+    if (latestTrained?.name) {
+      setPerformanceLoading(true);
+      mlService.getPerformance(latestTrained.name)
+        .then(perf => {
+          console.log('Performance metrics loaded:', perf);
+          setPerformance(perf);
+        })
+        .catch(err => {
+          console.error('Failed to load performance metrics:', err);
+          setPerformance(null);
+        })
+        .finally(() => setPerformanceLoading(false));
+    }
+  }, [latestTrained?.name]);
+  
+  // Transform students to mental health records
+  const mentalHealthRecords = useMemo(() => {
+    return transformStudentsToMentalHealthRecords(students || []);
+  }, [students]);
+  
+  // Calculate statistics from real data
+  const totalStudents = students?.length || 0;
+  const highRisk = mentalHealthRecords.filter((r: MentalHealthRecord) => r.riskLevel === "high").length;
+  const moderateRisk = mentalHealthRecords.filter((r: MentalHealthRecord) => r.riskLevel === "moderate").length;
+  const lowRisk = mentalHealthRecords.filter((r: MentalHealthRecord) => r.riskLevel === "low").length;
+  
+  const avgStress = totalStudents > 0 
+    ? (mentalHealthRecords.reduce((sum: number, r: MentalHealthRecord) => sum + r.stressLevel, 0) / totalStudents).toFixed(1)
+    : "0.0";
+  const avgSleep = totalStudents > 0
+    ? (mentalHealthRecords.reduce((sum: number, r: MentalHealthRecord) => sum + r.sleepHours, 0) / totalStudents).toFixed(1)
+    : "0.0";
 
   // Student data for table - with all fields
   interface StudentDataRow {
@@ -314,14 +348,14 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
     prediction: string;
   }
 
-  const studentData: StudentDataRow[] = extendedMockStudents.map((student) => {
-    const mentalHealth = mockMentalHealthRecords.find((record) => record.id === student.id);
+  const studentData: StudentDataRow[] = (students || []).map((student: Student) => {
+    const mentalHealth = mentalHealthRecords.find((record: MentalHealthRecord) => record.id === student.id);
     
     return {
-      studentId: student.studentId,
-      studentName: `${student.firstName} ${student.lastName}`,
-      age: mentalHealth?.age || 20,
-      course: student.major,
+      studentId: student.id?.toString() || "N/A",
+      studentName: student.name || "Unknown",
+      age: mentalHealth?.age || student.age || 20,
+      course: student.degree || "Unknown",
       stressLevel: mentalHealth?.stressLevel || 0,
       moodRating: mentalHealth?.moodRating || 3,
       sleepHours: mentalHealth?.sleepHours || 7,
@@ -355,6 +389,20 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
   const startIndex = (currentPage - 1) * studentsPerPage;
   const paginatedStudents = filteredStudents.slice(startIndex, startIndex + studentsPerPage);
 
+  // Show loading state
+  if (studentsLoading) {
+    return (
+      <div className="max-w-[1400px] mx-auto px-8 py-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 font-['Poppins:Regular',sans-serif]">Loading student data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[1400px] mx-auto px-8 py-6">
       {/* Quick Stats Cards */}
@@ -374,7 +422,7 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
             <div className="text-xs font-['Poppins:Medium',sans-serif] text-red-700">High Risk</div>
           </div>
           <div className="text-3xl font-['Poppins:Bold',sans-serif] text-red-900">{highRisk}</div>
-          <div className="text-xs text-red-600 mt-1">{Math.round((highRisk / totalStudents) * 100)}% of total</div>
+          <div className="text-xs text-red-600 mt-1">{totalStudents > 0 ? Math.round((highRisk / totalStudents) * 100) : 0}% of total</div>
         </div>
 
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-5 border-2 border-orange-200 shadow-sm">
@@ -383,7 +431,7 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
             <div className="text-xs font-['Poppins:Medium',sans-serif] text-orange-700">Moderate Risk</div>
           </div>
           <div className="text-3xl font-['Poppins:Bold',sans-serif] text-orange-900">{moderateRisk}</div>
-          <div className="text-xs text-orange-600 mt-1">{Math.round((moderateRisk / totalStudents) * 100)}% of total</div>
+          <div className="text-xs text-orange-600 mt-1">{totalStudents > 0 ? Math.round((moderateRisk / totalStudents) * 100) : 0}% of total</div>
         </div>
 
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-5 border-2 border-green-200 shadow-sm">
@@ -392,117 +440,7 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
             <div className="text-xs font-['Poppins:Medium',sans-serif] text-green-700">Low Risk</div>
           </div>
           <div className="text-3xl font-['Poppins:Bold',sans-serif] text-green-900">{lowRisk}</div>
-          <div className="text-xs text-green-600 mt-1">{Math.round((lowRisk / totalStudents) * 100)}% of total</div>
-        </div>
-      </div>
-
-      {/* Model Performance Metrics - COMPLETELY REDESIGNED */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-              <BarChart3 className="w-7 h-7 text-white" aria-hidden="true" />
-            </div>
-            <div>
-              <h2 className="text-3xl font-black text-gray-900">Model Performance</h2>
-              <p className="text-sm text-gray-500 mt-1">Real-time accuracy metrics</p>
-            </div>
-          </div>
-        </div>
-          
-        {/* Modern Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Accuracy Card */}
-          <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border-2 border-blue-200 hover:border-blue-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-            <div className="absolute top-4 right-4 w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
-              <Target className="w-6 h-6 text-blue-600" aria-hidden="true" />
-            </div>
-            <div className="mb-4">
-              <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2">Accuracy</p>
-              <p className="text-6xl font-black text-blue-900 leading-none">
-                {latestTrained?.accuracy ? `${(latestTrained.accuracy * 100).toFixed(1)}` : "94.2"}
-              </p>
-              <p className="text-2xl font-black text-blue-700 mt-1">%</p>
-            </div>
-            <div className="relative">
-              <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: latestTrained?.accuracy ? `${latestTrained.accuracy * 100}%` : '94.2%' }}
-                ></div>
-              </div>
-              <p className="text-xs text-blue-600 font-semibold mt-2">Model Accuracy Rate</p>
-            </div>
-          </div>
-
-          {/* Precision Card */}
-          <div className="group relative bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border-2 border-purple-200 hover:border-purple-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-            <div className="absolute top-4 right-4 w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
-              <Check className="w-6 h-6 text-purple-600" aria-hidden="true" />
-            </div>
-            <div className="mb-4">
-              <p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-2">Precision</p>
-              <p className="text-6xl font-black text-purple-900 leading-none">
-                {latestTrained?.precision ? `${(latestTrained.precision * 100).toFixed(1)}` : "91.8"}
-              </p>
-              <p className="text-2xl font-black text-purple-700 mt-1">%</p>
-            </div>
-            <div className="relative">
-              <div className="w-full h-2 bg-purple-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: latestTrained?.precision ? `${latestTrained.precision * 100}%` : '91.8%' }}
-                ></div>
-              </div>
-              <p className="text-xs text-purple-600 font-semibold mt-2">Positive Prediction Rate</p>
-            </div>
-          </div>
-
-          {/* Recall Card */}
-          <div className="group relative bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border-2 border-green-200 hover:border-green-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-            <div className="absolute top-4 right-4 w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
-              <Search className="w-6 h-6 text-green-600" aria-hidden="true" />
-            </div>
-            <div className="mb-4">
-              <p className="text-xs font-bold text-green-600 uppercase tracking-widest mb-2">Recall</p>
-              <p className="text-6xl font-black text-green-900 leading-none">
-                {latestTrained?.recall ? `${(latestTrained.recall * 100).toFixed(1)}` : "89.5"}
-              </p>
-              <p className="text-2xl font-black text-green-700 mt-1">%</p>
-            </div>
-            <div className="relative">
-              <div className="w-full h-2 bg-green-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: latestTrained?.recall ? `${latestTrained.recall * 100}%` : '89.5%' }}
-                ></div>
-              </div>
-              <p className="text-xs text-green-600 font-semibold mt-2">Detection Success Rate</p>
-            </div>
-          </div>
-
-          {/* F1 Score Card */}
-          <div className="group relative bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6 border-2 border-orange-200 hover:border-orange-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-            <div className="absolute top-4 right-4 w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
-              <Scale className="w-6 h-6 text-orange-600" aria-hidden="true" />
-            </div>
-            <div className="mb-4">
-              <p className="text-xs font-bold text-orange-600 uppercase tracking-widest mb-2">F1 Score</p>
-              <p className="text-6xl font-black text-orange-900 leading-none">
-                {latestTrained?.f1Score ? `${(latestTrained.f1Score * 100).toFixed(1)}` : "90.6"}
-              </p>
-              <p className="text-2xl font-black text-orange-700 mt-1">%</p>
-            </div>
-            <div className="relative">
-              <div className="w-full h-2 bg-orange-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-orange-500 to-orange-600 rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: latestTrained?.f1Score ? `${latestTrained.f1Score * 100}%` : '90.6%' }}
-                ></div>
-              </div>
-              <p className="text-xs text-orange-600 font-semibold mt-2">Balanced Performance</p>
-            </div>
-          </div>
+          <div className="text-xs text-green-600 mt-1">{totalStudents > 0 ? Math.round((lowRisk / totalStudents) * 100) : 0}% of total</div>
         </div>
       </div>
 
@@ -1223,16 +1161,23 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
 
   async function handleDeployLatest() {
     try {
-      const candidate = latestTrained;
-      if (!candidate) {
-        toast.error("No model available to deploy.");
+      if (!selectedPresetName) {
+        toast.error("Please select a preset to deploy.");
         return;
       }
-      await deployModel(candidate.id);
-      toast.success("Model deployed");
-      await reloadModels();
+      
+      // Check if preset is trained
+      const selectedPreset = presets.find(p => p.name === selectedPresetName);
+      if (!selectedPreset || selectedPreset.status !== 'trained') {
+        toast.error("Only trained presets can be deployed.");
+        return;
+      }
+      
+      await mlService.deployPreset(selectedPresetName);
+      toast.success(`Preset "${selectedPresetName}" deployed successfully!`);
+      await reloadPresets();
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to deploy model");
+      toast.error(e?.message ?? "Failed to deploy preset");
     }
   }
 
@@ -1283,15 +1228,12 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                 {hasPermission("mlModels.manage") && (
                   <div className="flex items-center gap-3">
                     <button
-                      onClick={handleRetrain}
-                      disabled={!selectedConfigName}
-                      className="px-5 py-2.5 bg-[#2563eb] text-white text-sm font-semibold rounded-lg hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
-                    >
-                      🔄 Re-Train
-                    </button>
-                    <button
                       onClick={handleDeployLatest}
-                      disabled={isLoadingPresets || !latestTrained}
+                      disabled={
+                        isLoadingPresets || 
+                        !selectedPresetName || 
+                        presets.find(p => p.name === selectedPresetName)?.status !== 'trained'
+                      }
                       className="px-5 py-2.5 bg-[#16a34a] text-white text-sm font-semibold rounded-lg hover:bg-[#15803d] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 hover:shadow-lg flex items-center gap-2 cursor-pointer"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1916,8 +1858,12 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
       <CreatePresetDialog
         open={isCreatePresetOpen}
         onOpenChange={setIsCreatePresetOpen}
-        onPresetCreated={() => {
-          reloadPresets();
+        onPresetCreated={async (presetName) => {
+          await reloadPresets();
+          // Auto-select the newly created preset to trigger polling
+          if (presetName) {
+            setSelectedPresetName(presetName);
+          }
         }}
       />
 

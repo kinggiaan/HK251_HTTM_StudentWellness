@@ -19,6 +19,16 @@ export interface MLPreset {
   status: 'idle' | 'training' | 'trained' | 'error';
   dataset_name?: string;
   last_trained?: string;
+  deployed?: boolean;  // Whether this preset is currently deployed for predictions
+}
+
+/**
+ * Preset metadata - contains original filename and creation timestamp
+ */
+export interface MLPresetMetadata {
+  preset_name: string;
+  original_filename: string;
+  created_at: string;
 }
 
 /**
@@ -31,6 +41,7 @@ export interface MLPresetState {
   error?: string | null; // Error message if status = 'error'
   started_at?: string;
   completed_at?: string | null;
+  deployed?: boolean;  // Whether this preset is currently deployed
 }
 
 /**
@@ -136,45 +147,87 @@ export const mlService = {
   // ========== Preset Management ==========
   
   /**
-   * Get list of all presets
+   * Get list of all presets with full metadata
+   * Fetches preset names first, then loads state and config for each preset in parallel
    */
   async listPresets(): Promise<MLPreset[]> {
     try {
       const result = await apiClient.get('/api/ml/presets');
       console.log('[ML Service] listPresets raw result:', result);
       
+      let presetNames: string[] = [];
+      
       // CASE 1: Backend returns { presets: ['name1', 'name2', ...] }
-      // This is the current backend format - convert string array to objects
       if (result && typeof result === 'object' && 'presets' in result) {
-        const presetNames = (result as any).presets;
-        if (Array.isArray(presetNames)) {
-          console.log('[ML Service] Converting preset names to objects:', presetNames);
-          // Convert string array to MLPreset objects with placeholder data
-          return presetNames.map((name: string) => ({
-            name,
-            dataset_name: `${name}.csv`, // Placeholder
-            created_at: new Date().toISOString(),
-            status: 'idle' as const,
-            // Will be populated when backend returns full objects
-          }));
+        const names = (result as any).presets;
+        if (Array.isArray(names)) {
+          presetNames = names;
+        }
+      }
+      // CASE 2: Direct array of strings
+      else if (Array.isArray(result) && result.length > 0 && typeof result[0] === 'string') {
+        presetNames = result;
+      }
+      // CASE 3: Already full objects (future-proof)
+      else if (Array.isArray(result) && result.length > 0 && typeof result[0] === 'object') {
+        console.log('[ML Service] Result already contains full objects');
+        return result;
+      }
+      // CASE 4: Wrapped in data property
+      else if (result && typeof result === 'object' && 'data' in result) {
+        const data = (result as any).data;
+        if (Array.isArray(data) && data.length > 0) {
+          if (typeof data[0] === 'string') {
+            presetNames = data;
+          } else if (typeof data[0] === 'object') {
+            return data;
+          }
         }
       }
       
-      // CASE 2: Direct array of objects (proper format from backend)
-      if (Array.isArray(result)) {
-        console.log('[ML Service] Result is array, length:', result.length);
-        return result;
+      if (presetNames.length === 0) {
+        console.log('[ML Service] No presets found');
+        return [];
       }
       
-      // CASE 3: Wrapped in data property
-      if (result && typeof result === 'object' && 'data' in result) {
-        const data = (result as any).data;
-        console.log('[ML Service] Result has data property:', data);
-        return Array.isArray(data) ? data : [];
-      }
+      console.log('[ML Service] Loading metadata for presets:', presetNames);
       
-      console.warn("ML Service - listPresets returned unexpected format:", result);
-      return [];
+      // Fetch state and metadata for each preset in parallel
+      const presetPromises = presetNames.map(async (name) => {
+        try {
+          // Load state and metadata in parallel (metadata contains original_filename and created_at)
+          const [state, metadata] = await Promise.allSettled([
+            this.getState(name),
+            this.getMetadata(name)
+          ]);
+          
+          const stateData = state.status === 'fulfilled' ? state.value : null;
+          const metadataData = metadata.status === 'fulfilled' ? metadata.value : null;
+          
+          return {
+            name,
+            dataset_name: metadataData?.original_filename || `${name}.csv`,
+            created_at: metadataData?.created_at || new Date().toISOString(),
+            status: stateData?.status || 'idle' as const,
+            last_trained: stateData?.completed_at || undefined,
+            deployed: stateData?.deployed || false,
+          };
+        } catch (error) {
+          console.warn(`[ML Service] Failed to load metadata for preset ${name}:`, error);
+          // Return preset with minimal data on error
+          return {
+            name,
+            dataset_name: `${name}.csv`,
+            created_at: new Date().toISOString(),
+            status: 'idle' as const,
+          };
+        }
+      });
+      
+      const presets = await Promise.all(presetPromises);
+      console.log('[ML Service] Loaded presets with metadata:', presets);
+      return presets;
+      
     } catch (error: any) {
       console.error("ML Service - listPresets error:", error);
       // Return empty array instead of throwing to prevent dashboard crash
@@ -226,10 +279,77 @@ export const mlService = {
   },
 
   /**
+   * Deploy a preset (mark as active for predictions)
+   * Only one preset can be deployed at a time
+   */
+  async deployPreset(presetName: string): Promise<{ success: boolean; message: string }> {
+    return apiClient.post(`/api/ml/presets/${presetName}/deploy`);
+  },
+
+  /**
    * Get current training state and progress
+   * Transforms Python state format to TypeScript MLPresetState format
    */
   async getState(presetName: string): Promise<MLPresetState> {
-    return apiClient.get(`/api/ml/presets/${presetName}/state`);
+    try {
+      const result = await apiClient.get(`/api/ml/presets/${presetName}/state`);
+      console.log('[ML Service] getState raw result:', result);
+      
+      // Python state file format: { "state": "dataset_analysing", "accuracy": 0.95, ... }
+      // Need to transform to TypeScript format: { status: "training", progress: 0.5, ... }
+      
+      const pythonState = (result as any).state || 'idle';
+      const accuracy = (result as any).accuracy;
+      const error = (result as any).error;
+      const started_at = (result as any).started_at;
+      const completed_at = (result as any).completed_at;
+      const deployed = (result as any).deployed || false;
+      
+      // Map Python state to TypeScript status
+      let status: MLPresetState['status'] = 'idle';
+      let progress = 0;
+      
+      if (pythonState === 'starting' || pythonState === 'dataset_analysing') {
+        status = 'training';
+        progress = 0.2; // Early stage of training
+      } else if (pythonState === 'training') {
+        status = 'training';
+        progress = 0.5; // Mid-stage of training
+      } else if (pythonState === 'performance_evaluating') {
+        status = 'training';
+        progress = 0.8; // Near completion
+      } else if (pythonState === 'done') {
+        status = 'trained';
+        progress = 1.0;
+      } else if (pythonState === 'error' || error) {
+        status = 'error';
+        progress = 0;
+      }
+      
+      return {
+        status,
+        progress,
+        accuracy,
+        error,
+        started_at,
+        completed_at,
+        deployed,
+      };
+    } catch (error: any) {
+      console.error('[ML Service] getState error:', error);
+      // Return idle state on error
+      return {
+        status: 'idle',
+        progress: 0,
+      };
+    }
+  },
+
+  /**
+   * Get preset metadata (original filename, creation date)
+   */
+  async getMetadata(presetName: string): Promise<MLPresetMetadata> {
+    return apiClient.get(`/api/ml/presets/${presetName}/metadata`);
   },
 
   // ========== Analysis & Performance ==========

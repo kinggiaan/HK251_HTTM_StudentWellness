@@ -23,6 +23,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Try to restore session on mount
     const restoreSession = async () => {
+      // Check if we're in development mode and should reset to login
+      const forceLogout = sessionStorage.getItem('forceLogout');
+      if (forceLogout === 'true') {
+        sessionStorage.removeItem('forceLogout');
+        authService.setStoredRefreshToken(null);
+        apiClient.setAccessToken(null);
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+
       const refreshToken = authService.getStoredRefreshToken();
       if (refreshToken) {
         try {
@@ -32,10 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(response.user);
           authService.setStoredRefreshToken(response.token.refreshToken);
         } catch (error) {
-          // Refresh failed, clear tokens
+          // Refresh failed, clear tokens and go to login
+          console.warn('Session restore failed:', error);
           authService.setStoredRefreshToken(null);
           apiClient.setAccessToken(null);
           setUser(null);
+          toast.info('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
         }
       }
       setIsLoading(false);

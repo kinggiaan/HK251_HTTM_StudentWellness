@@ -14,6 +14,7 @@ interface PresetCardProps {
 export function PresetCard({ preset, isSelected, onSelect, onRetrain, onDelete, presetState }: PresetCardProps) {
   // Use presetState if available, otherwise fall back to preset.status
   const currentStatus = presetState?.status || preset.status;
+  const isDeployed = presetState?.deployed || preset.deployed || false;
   
   const getStatusColor = (status: MLPreset['status'] | MLPresetState['status']) => {
     switch (status) {
@@ -89,6 +90,13 @@ export function PresetCard({ preset, isSelected, onSelect, onRetrain, onDelete, 
               <span className={`w-1.5 h-1.5 rounded-full ${statusColors.dot}`}></span>
               {currentStatus.toUpperCase()}
             </span>
+            {/* Deployed Badge */}
+            {isDeployed && (
+              <span className="px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 border bg-blue-100 text-blue-700 border-blue-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                DEPLOYED
+              </span>
+            )}
           </div>
 
           {/* Progress Bar - Show when training */}
