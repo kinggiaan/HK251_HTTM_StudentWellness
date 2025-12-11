@@ -1,0 +1,76 @@
+{
+  "test_metrics": {
+    "depression_truth": {
+      "acc": 0.7916367552045944,
+      "precision": 0.7873906550032004,
+      "recall": 0.7817875295137593,
+      "f1": 0.784040805792418
+    }
+  },
+  "confusion_matrices": {
+    "depression_truth": [
+      [
+        1683,
+        651
+      ],
+      [
+        510,
+        2728
+      ]
+    ]
+  },
+  "baseline": {
+    "depression_truth": {
+      "acc": 0.5811198851399857,
+      "f1": 0.36753688989784333
+    }
+  },
+  "permutation_importance": [
+    {
+      "target": "depression_truth",
+      "top_k": [
+        {
+          "name": "cat__Sleep Duration_0.0",
+          "importance": 0.1352175863615971
+        },
+        {
+          "name": "cat__Dietary Habits_2.0",
+          "importance": 0.05639300134589498
+        },
+        {
+          "name": "cat__Gender_1.0",
+          "importance": 0.026828174069089234
+        },
+        {
+          "name": "cat__Dietary Habits_0.0",
+          "importance": 0.017642440556303242
+        },
+        {
+          "name": "cat__Dietary Habits_1.0",
+          "importance": 0.012662628981606083
+        },
+        {
+          "name": "cat__Sleep Duration_2.0",
+          "importance": 0.009881112606549985
+        },
+        {
+          "name": "cat__Sleep Duration_3.0",
+          "importance": 0.003779721848362455
+        },
+        {
+          "name": "cat__Sleep Duration_1.0",
+          "importance": 0.0019851951547778914
+        },
+        {
+          "name": "cat__Gender_0.0",
+          "importance": 0.00041498429789139647
+        },
+        {
+          "name": "cat__Family History of Mental Illness_0.0",
+          "importance": -0.0024113952445043
+        }
+      ]
+    }
+  ],
+  "model_path": "public/dataset_model/preset2/model.pkl"
+}
