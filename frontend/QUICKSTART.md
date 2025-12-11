@@ -171,7 +171,7 @@ PORT=4001
 
 ### Lỗi: "Port 3000 already in use"
 - Vite sẽ tự động chọn port khác (3001, 3002, ...)
-- Hoặc đổi port trong `vite.config.ts`
+- Hoặc đổi port trong `vite.config.mts`
 
 ### Lỗi: "Cannot connect to API"
 - Kiểm tra backend đang chạy: http://localhost:4000/health

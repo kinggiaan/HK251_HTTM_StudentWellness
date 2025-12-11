@@ -51,7 +51,7 @@ npm run dev
 - [ ] Có file `package.json` trong thư mục hiện tại
 - [ ] Đã chạy `npm install`
 - [ ] Có folder `node_modules` trong thư mục hiện tại
-- [ ] Có file `vite.config.ts` trong thư mục hiện tại
+- [ ] Có file `vite.config.mts` trong thư mục hiện tại
 
 ## 🔍 Kiểm Tra Nhanh
 
@@ -60,7 +60,7 @@ npm run dev
 Get-Location
 Write-Host "package.json: $(Test-Path package.json)"
 Write-Host "node_modules: $(Test-Path node_modules)"
-Write-Host "vite.config.ts: $(Test-Path vite.config.ts)"
+Write-Host "vite.config.mts: $(Test-Path vite.config.mts)"
 ```
 
 Tất cả phải trả về `True`!

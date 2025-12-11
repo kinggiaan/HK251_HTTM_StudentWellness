@@ -128,7 +128,7 @@ echo "VITE_API_BASE_URL=http://localhost:4000/api" | Out-File -FilePath .env -En
 
 ```bash
 # Kiểm tra bạn đang ở đúng thư mục
-# Phải thấy file package.json và vite.config.ts
+# Phải thấy file package.json và vite.config.mts
 
 # Nếu đang ở trong thư mục src, quay về root:
 cd ..  # hoặc cd D:\HCMUT\HTTM\HTTM_Project

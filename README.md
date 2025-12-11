@@ -7,6 +7,10 @@
 
 # Deploy (for test at local) tutorial:
 
+## 0. Requirements:
+- Python: 3.10+
+- NodeJS: v18 or v20
+
 ## 1. Backend:
 
 ### How to start the project:
