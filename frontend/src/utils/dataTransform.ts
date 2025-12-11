@@ -20,12 +20,14 @@ export function transformStudentToMentalHealthRecord(
   
   console.log('✅ Student has data, transforming...');
 
-  // Map backend risk levels to frontend format
-  const riskLevelMap: Record<string, 'low' | 'moderate' | 'high'> = {
-    low: 'low',
-    medium: 'moderate',
-    high: 'high',
-    critical: 'high'
+  // Map backend risk levels to frontend format (2-level system)
+  const riskLevelMap: Record<string, 'no-depression' | 'has-depression'> = {
+    low: 'no-depression',
+    medium: 'no-depression',
+    high: 'has-depression',
+    critical: 'has-depression',
+    'no-depression': 'no-depression',
+    'has-depression': 'has-depression'
   };
 
   // Map sleep quality from duration string to quality
@@ -52,7 +54,21 @@ export function transformStudentToMentalHealthRecord(
   // Use health record data if available, otherwise use student's own data
   const stressLevel = student.academic_pressure ?? healthRecord?.stressLevel ?? student.stressLevel ?? 3;
   const sleepHours = student.sleepHours ?? healthRecord?.sleepHours ?? 7;
-  const riskLevel = student.riskLevel ?? healthRecord?.riskLevel ?? 'low';
+  
+  // Calculate risk level from depression_predicting (ML prediction)
+  // Simple 2-level system: depression_predicting = 1 → Has Depression, else → No Depression
+  let riskLevel: 'no-depression' | 'has-depression' = 'no-depression';
+  if (student.depression_predicting !== undefined && student.depression_predicting !== null) {
+    // Use ML prediction to determine depression status
+    riskLevel = student.depression_predicting === 1 ? 'has-depression' : 'no-depression';
+  } else if (student.depression_truth !== undefined && student.depression_truth !== null) {
+    // Fallback to validated truth if no prediction
+    riskLevel = student.depression_truth === 1 ? 'has-depression' : 'no-depression';
+  } else {
+    // Default: no depression (for new students without prediction)
+    riskLevel = 'no-depression';
+  }
+  
   const depressionScore = student.depression_predicting ?? student.depression_truth ?? healthRecord?.depressionLevel ?? 0;
   const financialStress = student.financial_stress ?? 2;
 

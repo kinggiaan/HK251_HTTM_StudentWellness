@@ -229,6 +229,30 @@ export const studentsService = {
 
   async delete(id: string): Promise<void> {
     return apiClient.delete(`/api/students/${id}`);
+  },
+
+  // Consultant-specific: Validate a student
+  async validateStudent(documentId: string, validated: boolean): Promise<Student> {
+    const response = await apiClient.put(`/api/students/${documentId}`, {
+      data: { validated }
+    });
+    return response;
+  },
+
+  // Consultant-specific: Set depression truth and prediction
+  async updateDepressionStatus(
+    documentId: string, 
+    depressionTruth: number, 
+    depressionPredicting?: number
+  ): Promise<Student> {
+    const data: any = { depression_truth: depressionTruth };
+    if (depressionPredicting !== undefined) {
+      data.depression_predicting = depressionPredicting;
+    }
+    const response = await apiClient.put(`/api/students/${documentId}`, {
+      data
+    });
+    return response;
   }
 };
 

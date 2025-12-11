@@ -55,6 +55,12 @@ export const mentalHealthService = {
     studentId: string,
     params?: ListHealthRecordsParams
   ): Promise<MentalHealthRecord[]> {
+    // TODO: Backend endpoint not implemented yet
+    // Return empty array for now to avoid 404 errors
+    console.warn('⚠️ Health records API not implemented yet, using student data instead');
+    return [];
+    
+    /* Commented out until backend implements this endpoint
     const queryParams = new URLSearchParams();
     if (params?.from) queryParams.append('from', params.from);
     if (params?.to) queryParams.append('to', params.to);
@@ -66,6 +72,7 @@ export const mentalHealthService = {
     );
     // Handle response format if needed, similar to students service
     return Array.isArray(response) ? response : (response.data || []);
+    */
   },
 
   async getById(id: string): Promise<MentalHealthRecord> {

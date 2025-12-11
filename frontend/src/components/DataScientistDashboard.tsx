@@ -281,8 +281,13 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
   const [activeTab, setActiveTab] = useState<"basic" | "mental" | "lifestyle" | "background" | "academic">("basic");
   const studentsPerPage = 5;
   
-  // Load students from API
-  const { students, isLoading: studentsLoading } = useStudents();
+  // Fix: Load ALL students by requesting a large limit (API handles pagination)
+  // Use currentPage for pagination controls
+  const { students, isLoading: studentsLoading } = useStudents({
+    page: 1, // Always get page 1 for now
+    limit: 100, // Fetch more students (increase if you have more than 100)
+    search: searchQuery || undefined
+  });
   const [performance, setPerformance] = useState<MLPerformance | null>(null);
   const [performanceLoading, setPerformanceLoading] = useState(false);
   
@@ -308,11 +313,10 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
     return transformStudentsToMentalHealthRecords(students || []);
   }, [students]);
   
-  // Calculate statistics from real data
+  // Calculate statistics from real data (2-level system)
   const totalStudents = students?.length || 0;
-  const highRisk = mentalHealthRecords.filter((r: MentalHealthRecord) => r.riskLevel === "high").length;
-  const moderateRisk = mentalHealthRecords.filter((r: MentalHealthRecord) => r.riskLevel === "moderate").length;
-  const lowRisk = mentalHealthRecords.filter((r: MentalHealthRecord) => r.riskLevel === "low").length;
+  const hasDepression = mentalHealthRecords.filter((r: MentalHealthRecord) => r.riskLevel === "has-depression").length;
+  const noDepression = mentalHealthRecords.filter((r: MentalHealthRecord) => r.riskLevel === "no-depression").length;
   
   const avgStress = totalStudents > 0 
     ? (mentalHealthRecords.reduce((sum: number, r: MentalHealthRecord) => sum + r.stressLevel, 0) / totalStudents).toFixed(1)
@@ -346,10 +350,19 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
     lastCheckIn: string;
     notes: string;
     prediction: string;
+    validated: boolean;
+    depressionTruth?: number;
+    depressionPredicting?: number;
   }
 
   const studentData: StudentDataRow[] = (students || []).map((student: Student) => {
-    const mentalHealth = mentalHealthRecords.find((record: MentalHealthRecord) => record.id === student.id);
+    // Fix: Match mentalHealth record by stripping "-health" suffix from record.id
+    // record.id format: "2-health", "3-health" 
+    // student.id format: "2", "3"
+    const mentalHealth = mentalHealthRecords.find((record: MentalHealthRecord) => {
+      const recordIdWithoutSuffix = record.id.toString().replace('-health', '');
+      return recordIdWithoutSuffix === student.id?.toString() || record.id === student.id;
+    });
     
     return {
       studentId: student.id?.toString() || "N/A",
@@ -360,8 +373,7 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
       moodRating: mentalHealth?.moodRating || 3,
       sleepHours: mentalHealth?.sleepHours || 7,
       counselingSessions: mentalHealth?.counselingSessions || 0,
-      riskLevel: mentalHealth?.riskLevel === "high" ? "High" : 
-                 mentalHealth?.riskLevel === "moderate" ? "Medium" : "Low",
+      riskLevel: mentalHealth?.riskLevel === "has-depression" ? "Có Depression" : "Không Depression",
       depressionScore: mentalHealth?.depressionScore || 0,
       anxietyScore: mentalHealth?.anxietyScore || 0,
       sleepQuality: mentalHealth?.sleepQuality || "Good",
@@ -375,8 +387,10 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
       semesterCreditLoad: mentalHealth?.semesterCreditLoad || 15,
       lastCheckIn: mentalHealth?.lastCheckIn || "N/A",
       notes: mentalHealth?.notes || "No notes available",
-      prediction: mentalHealth?.riskLevel === "high" ? "Stress" : 
-                  mentalHealth?.riskLevel === "moderate" ? "Anxiety" : "Normal",
+      prediction: mentalHealth?.riskLevel === "has-depression" ? "Depression" : "Normal",
+      validated: student.validated || false, // Add validated status
+      depressionTruth: student.depression_truth,
+      depressionPredicting: student.depression_predicting
     };
   });
 
@@ -385,6 +399,7 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
     student.studentId.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Fix: Add client-side pagination for DataScientist (5 students per page)
   const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
   const startIndex = (currentPage - 1) * studentsPerPage;
   const paginatedStudents = filteredStudents.slice(startIndex, startIndex + studentsPerPage);
@@ -405,8 +420,8 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
 
   return (
     <div className="max-w-[1400px] mx-auto px-8 py-6">
-      {/* Quick Stats Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      {/* Quick Stats Cards - 3 cards for 2-level system */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-5 border-2 border-blue-200 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <Users className="w-6 h-6 text-blue-700" aria-hidden="true" />
@@ -419,28 +434,19 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
         <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-5 border-2 border-red-200 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <AlertCircle className="w-6 h-6 text-red-700" aria-hidden="true" />
-            <div className="text-xs font-['Poppins:Medium',sans-serif] text-red-700">High Risk</div>
+            <div className="text-xs font-['Poppins:Medium',sans-serif] text-red-700">Có Depression</div>
           </div>
-          <div className="text-3xl font-['Poppins:Bold',sans-serif] text-red-900">{highRisk}</div>
-          <div className="text-xs text-red-600 mt-1">{totalStudents > 0 ? Math.round((highRisk / totalStudents) * 100) : 0}% of total</div>
-        </div>
-
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-5 border-2 border-orange-200 shadow-sm">
-          <div className="flex items-center gap-3 mb-2">
-            <AlertTriangle className="w-6 h-6 text-orange-700" aria-hidden="true" />
-            <div className="text-xs font-['Poppins:Medium',sans-serif] text-orange-700">Moderate Risk</div>
-          </div>
-          <div className="text-3xl font-['Poppins:Bold',sans-serif] text-orange-900">{moderateRisk}</div>
-          <div className="text-xs text-orange-600 mt-1">{totalStudents > 0 ? Math.round((moderateRisk / totalStudents) * 100) : 0}% of total</div>
+          <div className="text-3xl font-['Poppins:Bold',sans-serif] text-red-900">{hasDepression}</div>
+          <div className="text-xs text-red-600 mt-1">{totalStudents > 0 ? Math.round((hasDepression / totalStudents) * 100) : 0}% of total</div>
         </div>
 
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-5 border-2 border-green-200 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <CheckCircle2 className="w-6 h-6 text-green-700" aria-hidden="true" />
-            <div className="text-xs font-['Poppins:Medium',sans-serif] text-green-700">Low Risk</div>
+            <div className="text-xs font-['Poppins:Medium',sans-serif] text-green-700">Không Depression</div>
           </div>
-          <div className="text-3xl font-['Poppins:Bold',sans-serif] text-green-900">{lowRisk}</div>
-          <div className="text-xs text-green-600 mt-1">{totalStudents > 0 ? Math.round((lowRisk / totalStudents) * 100) : 0}% of total</div>
+          <div className="text-3xl font-['Poppins:Bold',sans-serif] text-green-900">{noDepression}</div>
+          <div className="text-xs text-green-600 mt-1">{totalStudents > 0 ? Math.round((noDepression / totalStudents) * 100) : 0}% of total</div>
         </div>
       </div>
 
@@ -449,34 +455,25 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
         {/* Risk Distribution */}
         <div className="bg-white rounded-[8px] p-[24px] shadow-sm border border-gray-200">
         <div className="flex flex-col gap-[16px]">
-          <p className="font-['Poppins:SemiBold',sans-serif] text-[#0c1e33] text-[16px]">Risk Distribution</p>
+          <p className="font-['Poppins:SemiBold',sans-serif] text-[#0c1e33] text-[16px]">Depression Distribution</p>
           
           <div className="flex flex-col gap-[12px] mt-[8px]">
-            {/* High Risk */}
+            {/* Has Depression */}
             <div className="flex items-center gap-[12px]">
-              <div className="w-[100px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[12px]">High Risk</div>
+              <div className="w-[100px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[12px]">Có Depression</div>
               <div className="flex-1 h-[28px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
-                <div className="h-full bg-[#eb5757] transition-all" style={{ width: `${(highRisk / totalStudents) * 100}%` }}></div>
+                <div className="h-full bg-[#eb5757] transition-all" style={{ width: `${totalStudents > 0 ? (hasDepression / totalStudents) * 100 : 0}%` }}></div>
               </div>
-              <div className="w-[60px] text-right font-['Poppins:Bold',sans-serif] text-[#eb5757] text-[14px]">{highRisk} ({Math.round((highRisk / totalStudents) * 100)}%)</div>
+              <div className="w-[60px] text-right font-['Poppins:Bold',sans-serif] text-[#eb5757] text-[14px]">{hasDepression} ({totalStudents > 0 ? Math.round((hasDepression / totalStudents) * 100) : 0}%)</div>
             </div>
 
-            {/* Moderate Risk */}
+            {/* No Depression */}
             <div className="flex items-center gap-[12px]">
-              <div className="w-[100px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[12px]">Moderate Risk</div>
+              <div className="w-[100px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[12px]">Không Depression</div>
               <div className="flex-1 h-[28px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
-                <div className="h-full bg-[#f2994a] transition-all" style={{ width: `${(moderateRisk / totalStudents) * 100}%` }}></div>
+                <div className="h-full bg-[#27ae60] transition-all" style={{ width: `${totalStudents > 0 ? (noDepression / totalStudents) * 100 : 0}%` }}></div>
               </div>
-              <div className="w-[60px] text-right font-['Poppins:Bold',sans-serif] text-[#f2994a] text-[14px]">{moderateRisk} ({Math.round((moderateRisk / totalStudents) * 100)}%)</div>
-            </div>
-
-            {/* Low Risk */}
-            <div className="flex items-center gap-[12px]">
-              <div className="w-[100px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[12px]">Low Risk</div>
-              <div className="flex-1 h-[28px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
-                <div className="h-full bg-[#27ae60] transition-all" style={{ width: `${(lowRisk / totalStudents) * 100}%` }}></div>
-              </div>
-              <div className="w-[60px] text-right font-['Poppins:Bold',sans-serif] text-[#27ae60] text-[14px]">{lowRisk} ({Math.round((lowRisk / totalStudents) * 100)}%)</div>
+              <div className="w-[60px] text-right font-['Poppins:Bold',sans-serif] text-[#27ae60] text-[14px]">{noDepression} ({totalStudents > 0 ? Math.round((noDepression / totalStudents) * 100) : 0}%)</div>
             </div>
           </div>
 
@@ -652,6 +649,7 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
                     <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Age</th>
                     <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Course</th>
                     <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Risk Level</th>
+                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Validated</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -663,27 +661,33 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
                       <td className="py-[12px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.course}</td>
                       <td className="py-[12px] px-[12px] text-center">
                         <span className={`font-['Poppins:Bold',sans-serif] text-[12px] px-[12px] py-[4px] rounded-full flex items-center gap-1 ${
-                          student.riskLevel === "High" ? "bg-red-100 text-red-700 border border-red-300" :
-                          student.riskLevel === "Medium" ? "bg-orange-100 text-orange-700 border border-orange-300" :
+                          student.riskLevel === "Có Depression" ? "bg-red-100 text-red-700 border border-red-300" :
                           "bg-green-100 text-green-700 border border-green-300"
                         }`}>
-                          {student.riskLevel === "High" ? (
+                          {student.riskLevel === "Có Depression" ? (
                             <>
                               <AlertCircle className="w-3 h-3" aria-hidden="true" />
-                              <span>High</span>
-                            </>
-                          ) : student.riskLevel === "Medium" ? (
-                            <>
-                              <AlertTriangle className="w-3 h-3" aria-hidden="true" />
-                              <span>Moderate</span>
+                              <span>Có Depression</span>
                             </>
                           ) : (
                             <>
                               <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
-                              <span>Low</span>
+                              <span>Không Depression</span>
                             </>
                           )}
                         </span>
+                      </td>
+                      <td className="py-[12px] px-[12px] text-center">
+                        {student.validated ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 font-['Poppins:Medium',sans-serif] text-[11px]">
+                            <Check className="w-3 h-3" />
+                            Validated
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600 font-['Poppins:Regular',sans-serif] text-[11px]">
+                            Pending
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

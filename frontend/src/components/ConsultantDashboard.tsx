@@ -10,6 +10,8 @@ import { Users, Search as SearchIcon, AlertCircle, AlertTriangle, CheckCircle2 }
 import svgPaths from "../imports/svg-695504e5jy";
 import img from "figma:asset/b84a227f158a096d5fb31a5a5f2dd6c595e78767.png";
 import { imgGroup } from "../imports/svg-tct91";
+import { ValidateStudentDialog } from "./ValidateStudentDialog";
+import type { Student } from "../services/students.service";
 
 interface ConsultantDashboardProps {
   onLogout: () => void;
@@ -167,6 +169,8 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
   const { hasPermission } = usePermissions();
   const [activeTab, setActiveTab] = useState<"basic" | "mental" | "lifestyle" | "background" | "academic">("basic");
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [shouldRefetch, setShouldRefetch] = useState(0);
 
   // Debounce search input
   useEffect(() => {
@@ -192,10 +196,13 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
   }, []);
 
   // Fetch students with health data
+  // Fix: Increase limit to fetch all students (was 50, now 100)
   const { students, isLoading: isLoadingStudents } = useStudents({
     page: currentPage,
-    limit: 50,
-    search: searchQuery || undefined
+    limit: 100,
+    search: searchQuery || undefined,
+    // Add key to force refetch
+    ...(shouldRefetch ? { refetch: shouldRefetch } : {})
   });
 
   // Debug: Log students data
@@ -240,30 +247,43 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
   };
 
   // Transform to extended student format for tab display
-  const extendedStudents = mentalHealthRecords.map(record => ({
-    studentName: record.studentName,
-    studentId: record.id,
-    age: record.age,
-    course: record.course,
-    riskLevel: record.riskLevel === "low" ? "Low" : record.riskLevel === "moderate" ? "Medium" : "High",
-    stressLevel: record.stressLevel,
-    depressionScore: Math.floor(Math.random() * 5) + 1,
-    anxietyScore: Math.floor(Math.random() * 5) + 1,
-    moodRating: Math.floor(Math.random() * 5) + 1,
-    sleepQuality: record.sleepQuality || "Good",
-    sleepHours: record.sleepHours || 7,
-    physicalActivity: record.physicalActivity || "Moderate",
-    dietQuality: "Balanced",
-    socialSupport: Math.floor(Math.random() * 5) + 1,
-    substanceUse: "None",
-    familyHistory: "No",
-    chronicIllness: "None",
-    financialStress: Math.floor(Math.random() * 5) + 1,
-    semesterCreditLoad: 15,
-    counselingSessions: Math.floor(Math.random() * 5),
-    lastCheckIn: record.lastCheckIn,
-    prediction: record.riskLevel === "low" ? "Low Risk" : record.riskLevel === "moderate" ? "Moderate" : "High Risk"
-  }));
+  const extendedStudents = mentalHealthRecords.map(record => {
+    // Fix: Match by removing "-health" suffix from record.id and compare with student.id
+    // record.id format: "2-health", "3-health" from healthRecord
+    // student.id format: "2", "3" (string or number)
+    const recordIdWithoutSuffix = record.id.toString().replace('-health', '');
+    const actualStudent = (students || []).find(s => 
+      s.id?.toString() === recordIdWithoutSuffix || 
+      s.studentId === record.id ||
+      s.id?.toString() === record.id
+    );
+    return {
+      studentName: record.studentName,
+      studentId: record.id.toString().replace('-health', ''),
+      age: record.age,
+      course: record.course,
+      riskLevel: record.riskLevel === "has-depression" ? "Có Depression" : "Không Depression",
+      stressLevel: record.stressLevel,
+      depressionScore: Math.floor(Math.random() * 5) + 1,
+      anxietyScore: Math.floor(Math.random() * 5) + 1,
+      moodRating: Math.floor(Math.random() * 5) + 1,
+      sleepQuality: record.sleepQuality || "Good",
+      sleepHours: record.sleepHours || 7,
+      physicalActivity: record.physicalActivity || "Moderate",
+      dietQuality: "Balanced",
+      socialSupport: Math.floor(Math.random() * 5) + 1,
+      substanceUse: "None",
+      familyHistory: "No",
+      chronicIllness: "None",
+      financialStress: Math.floor(Math.random() * 5) + 1,
+      semesterCreditLoad: 15,
+      counselingSessions: Math.floor(Math.random() * 5),
+      lastCheckIn: record.lastCheckIn,
+      prediction: record.riskLevel === "has-depression" ? "Depression" : "Normal",
+      validated: actualStudent?.validated || false,
+      actualStudentData: actualStudent
+    };
+  });
 
   const filteredStudents = useMemo(() => {
     const query = debouncedSearch.toLowerCase();
@@ -275,9 +295,10 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
     );
   }, [extendedStudents, debouncedSearch]);
 
-  const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
-  const startIndex = (currentPage - 1) * studentsPerPage;
-  const paginatedStudents = filteredStudents.slice(startIndex, startIndex + studentsPerPage);
+  // Fix: Remove double pagination - API already handles pagination
+  // Use filteredStudents directly (already paginated by backend)
+  const paginatedStudents = filteredStudents;
+  const totalPages = 1; // Backend handles pagination
 
   return (
     <div className="min-h-screen bg-white">
@@ -470,6 +491,8 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Age</th>
                         <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Course</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Risk Level</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Validated</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -481,12 +504,32 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
                           <td className="py-[12px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.course}</td>
                           <td className="py-[12px] px-[12px] text-center">
                             <span className={`font-['Poppins:Bold',sans-serif] text-[12px] px-[12px] py-[4px] rounded-full inline-flex items-center gap-1 ${
-                              student.riskLevel === "High" ? "bg-red-100 text-red-700 border border-red-300" :
-                              student.riskLevel === "Medium" ? "bg-orange-100 text-orange-700 border border-orange-300" :
+                              student.riskLevel === "Có Depression" ? "bg-red-100 text-red-700 border border-red-300" :
                               "bg-green-100 text-green-700 border border-green-300"
                             }`}>
                               {student.riskLevel}
                             </span>
+                          </td>
+                          <td className="py-[12px] px-[12px] text-center">
+                            {student.validated ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 font-['Poppins:Medium',sans-serif] text-[11px]">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Validated
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600 font-['Poppins:Regular',sans-serif] text-[11px]">
+                                Pending
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-[12px] px-[12px] text-center">
+                            <button
+                              onClick={() => student.actualStudentData && setSelectedStudent(student.actualStudentData)}
+                              disabled={!student.actualStudentData}
+                              className="px-3 py-1.5 text-xs font-['Poppins:Medium',sans-serif] text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded transition-colors"
+                            >
+                              Validate
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -616,7 +659,7 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
               {/* Pagination */}
               <div className="flex items-center justify-between mt-[16px] pt-[16px] border-t border-[#e5e5e5]">
                 <p className="font-['Poppins:Regular',sans-serif] text-[#495d72] text-[11px]">
-                  Showing <span className="font-['Poppins:Bold',sans-serif]">{startIndex + 1}-{Math.min(startIndex + studentsPerPage, filteredStudents.length)}</span> of <span className="font-['Poppins:Bold',sans-serif]">{filteredStudents.length}</span> students
+                  Showing <span className="font-['Poppins:Bold',sans-serif]">{filteredStudents.length}</span> students {currentPage > 1 ? `(page ${currentPage})` : ''}
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -642,6 +685,18 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
           )}
         </div>
       </div>
+      
+      {/* Validate Student Dialog */}
+      {selectedStudent && (
+        <ValidateStudentDialog
+          student={selectedStudent}
+          onClose={() => setSelectedStudent(null)}
+          onSuccess={() => {
+            setShouldRefetch(prev => prev + 1);
+            setSelectedStudent(null);
+          }}
+        />
+      )}
     </div>
   );
 }
