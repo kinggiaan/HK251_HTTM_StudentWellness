@@ -6,11 +6,12 @@ import { useStudents } from "../hooks/useStudents";
 import { transformStudentsToMentalHealthRecords } from "../utils/dataTransform";
 import { useAuth } from "../contexts/AuthContext";
 import { usePermissions } from "../contexts/PermissionsContext";
-import { Users, Search as SearchIcon, AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Users, Search as SearchIcon, AlertCircle, AlertTriangle, CheckCircle2, Download } from "lucide-react";
 import svgPaths from "../imports/svg-695504e5jy";
 import img from "figma:asset/b84a227f158a096d5fb31a5a5f2dd6c595e78767.png";
 import { imgGroup } from "../imports/svg-tct91";
 import { ValidateStudentDialog } from "./ValidateStudentDialog";
+import { apiClient } from "../lib/api";
 import type { Student } from "../services/students.service";
 
 interface ConsultantDashboardProps {
@@ -172,6 +173,84 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [shouldRefetch, setShouldRefetch] = useState(0);
 
+  // Export to CSV function
+  const handleExportCSV = async () => {
+    try {
+      // Use apiClient with authentication instead of fetch
+      const data = await apiClient.get<{ data: any[] }>('/api/students?pagination[limit]=1000');
+      
+      console.log('Export - API Response:', data);
+      
+      // Check if data exists (Strapi returns {data: [...]} format)
+      const students = data.data || [];
+      
+      if (!students || students.length === 0) {
+        alert('No data to export. Please add students first.');
+        return;
+      }
+
+      console.log('Export - Students to export:', students.length);
+
+      // Prepare CSV headers - only include fields that exist in Student schema
+      const headers = [
+        'ID', 'Name', 'Age', 'Gender', 'City', 'Degree', 'CGPA',
+        'Academic Pressure', 'Study Satisfaction', 'Sleep Duration',
+        'Dietary Habits', 'Work/Study Hours', 'Financial Stress',
+        'Family History of Mental Illness', 'Depression Truth', 'Depression Predicting', 'Validated'
+      ];
+
+      // Prepare CSV rows
+      const rows = students.map((student: any) => {
+        const attrs = student.attributes || student;
+        return [
+          student.id || attrs.id || '',
+          attrs.name || '',
+          attrs.age || '',
+          attrs.gender || '',
+          attrs.city || '',
+          attrs.degree || '',
+          attrs.cgpa || '',
+          attrs.academic_pressure || '',
+          attrs.study_satisfaction || '',
+          attrs.sleep_duration || '',
+          attrs.dietary_habits || '',
+          attrs.work_study_hours || '',
+          attrs.financial_stress || '',
+          attrs.family_his_of_mental_illness || '',
+          attrs.depression_truth || '',
+          attrs.depression_predicting || '',
+          attrs.validated ? 'Yes' : 'No'
+        ].map(value => {
+          // Escape commas and quotes in CSV
+          const stringValue = String(value);
+          if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            return `"${stringValue.replace(/"/g, '""')}"`;
+          }
+          return stringValue;
+        }).join(',');
+      });
+
+      // Combine headers and rows
+      const csvContent = [headers.join(','), ...rows].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `students_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      alert(`Successfully exported ${students.length} students to CSV`);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again. Error: ' + (error as Error).message);
+    }
+  };
+
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -330,10 +409,12 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
             <div className="flex items-center gap-[16px] flex-wrap">
               {hasPermission("students.export") && (
               <button 
-                aria-label="Export student data to file"
-                className="font-['Poppins:Medium',sans-serif] text-[#2f80ed] text-[11.507px] hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-2 py-1"
+                onClick={handleExportCSV}
+                aria-label="Export student data to CSV file"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-['Poppins:Medium',sans-serif] text-[12px] transition-colors"
               >
-                Export Data
+                <Download className="w-4 h-4" />
+                Export CSV
               </button>
               )}
               

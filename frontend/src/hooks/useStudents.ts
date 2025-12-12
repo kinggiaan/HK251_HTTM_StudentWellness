@@ -16,6 +16,7 @@ export function useStudents(params?: {
   search?: string;
   status?: string;
   riskLevel?: string;
+  refetchTrigger?: number;
 }) {
   const [students, setStudents] = useState<StudentWithHealthData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -105,7 +106,7 @@ export function useStudents(params?: {
 
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(params)]);
+  }, [JSON.stringify(params), params?.refetchTrigger]);
 
   return {
     students,

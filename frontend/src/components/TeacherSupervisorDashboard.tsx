@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { MentalHealthRecord } from "../data/mockMentalHealth";
 import { teacherNotifications } from "../data/mockNotificationsByRole";
 import { NotificationPanel } from "./NotificationPanel";
-import { Users, Search as SearchIcon, AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Users, Search as SearchIcon, AlertCircle, AlertTriangle, CheckCircle2, Edit, Upload } from "lucide-react";
 import svgPaths from "../imports/svg-ws6xw1un37";
 import img from "figma:asset/b84a227f158a096d5fb31a5a5f2dd6c595e78767.png";
 import { useAuth } from "../contexts/AuthContext";
@@ -10,6 +10,9 @@ import { usePermissions } from "../contexts/PermissionsContext";
 import { useStudents } from "../hooks/useStudents";
 import { transformStudentsToMentalHealthRecords } from "../utils/dataTransform";
 import { toast } from "sonner";
+import { EditStudentModal } from "./EditStudentModal";
+import { ImportStudentsModal } from "./ImportStudentsModal";
+import type { Student } from "../services/students.service";
 
 interface TeacherSupervisorDashboardProps {
   mentalHealthRecords?: MentalHealthRecord[];
@@ -169,6 +172,9 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
   const [isImporting, setIsImporting] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
   const [activeTab, setActiveTab] = useState<"basic" | "mental" | "lifestyle" | "background" | "academic" | "other">("basic");
+  const [selectedStudentForEdit, setSelectedStudentForEdit] = useState<Student | null>(null);
+  const [shouldRefetch, setShouldRefetch] = useState(0);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -197,10 +203,11 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
 
   // Load students if no records were provided
   // Fix: Increase limit to fetch all students (was 50, now 100)
-  const { students, isLoading: isLoadingStudents } = useStudents({
+  const { students, isLoading: isLoadingStudents, refetch } = useStudents({
     page: currentPage,
     limit: 100,
-    search: searchQuery || undefined
+    search: searchQuery || undefined,
+    refetchTrigger: shouldRefetch
   });
   const derivedRecords = transformStudentsToMentalHealthRecords(students || []);
   const allRecords = (mentalHealthRecords && mentalHealthRecords.length > 0) ? mentalHealthRecords : derivedRecords;
@@ -286,7 +293,8 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
       workPressure: record.workPressure || actualStudent?.work_pressure,
       jobSatisfaction: record.jobSatisfaction || actualStudent?.job_satisfaction,
       prediction: record.prediction || (record.riskLevel === "has-depression" ? "Has Depression" : "No Depression"),
-      validated: actualStudent?.validated || false
+      validated: actualStudent?.validated || false,
+      actualStudentData: actualStudent // Add this to enable Edit button
     };
   });
 
@@ -336,28 +344,15 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
 
             <div className="flex items-center gap-[16px] flex-wrap">
               {hasPermission("students.import") && (
-                <>
-                  <input
-                    id="import-csv-input"
-                    type="file"
-                    accept=".csv,text/csv"
-                    className="hidden"
-                    aria-label="Import CSV file with student data"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImportFile(file);
-                      e.currentTarget.value = "";
-                    }}
-                  />
-                  <button
-                    disabled={isImporting}
-                    onClick={() => document.getElementById("import-csv-input")?.click()}
-                    aria-label={isImporting ? "Importing CSV file" : "Import CSV file with student data"}
-                    className="font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[11.507px] bg-[#e9ebef] hover:bg-[#e1e3e8] transition-colors px-[12px] py-[8px] rounded-[4px] disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  >
-                    {isImporting ? "Đang import..." : "Import CSV"}
-                  </button>
-                </>
+                <button
+                  onClick={() => setShowImportModal(true)}
+                  disabled={isImporting}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-['Poppins:Medium',sans-serif] text-[12px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Import students from CSV"
+                >
+                  <Upload className="w-4 h-4" />
+                  Import CSV
+                </button>
               )}
               {hasPermission("students.export") && (
               <button 
@@ -533,6 +528,7 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Risk Level</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Prediction</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Validated</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -574,6 +570,17 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                                 Pending
                               </span>
                             )}
+                          </td>
+                          <td className="py-[12px] px-[12px] text-center">
+                            <button
+                              onClick={() => student.actualStudentData && setSelectedStudentForEdit(student.actualStudentData)}
+                              disabled={!student.actualStudentData}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-['Poppins:Medium',sans-serif] text-[11px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Edit student information"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                              Edit
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -622,8 +629,6 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Sleep Hours</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Physical Activity</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Diet Quality</th>
-                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Social Support</th>
-                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Substance Use</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -738,6 +743,29 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
 
         </div>
       </div>
+
+      {/* Edit Student Modal */}
+      {selectedStudentForEdit && (
+        <EditStudentModal
+          student={selectedStudentForEdit}
+          onClose={() => setSelectedStudentForEdit(null)}
+          onSuccess={() => {
+            setShouldRefetch(prev => prev + 1);
+            setSelectedStudentForEdit(null);
+          }}
+        />
+      )}
+
+      {/* Import Students Modal */}
+      {showImportModal && (
+        <ImportStudentsModal
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => {
+            setShouldRefetch(prev => prev + 1);
+            setShowImportModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }
