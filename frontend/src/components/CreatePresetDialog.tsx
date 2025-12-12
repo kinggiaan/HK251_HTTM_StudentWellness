@@ -34,9 +34,9 @@ export function CreatePresetDialog({ open, onOpenChange, onPresetCreated }: Crea
   // Visual config states
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>(AVAILABLE_FEATURES);
   const [testSize, setTestSize] = useState(0.2);
-  const [nEstimators, setNEstimators] = useState(100);
-  const [maxDepth, setMaxDepth] = useState<number | null>(null);
-  const [classWeight, setClassWeight] = useState<"balanced" | "none">("balanced");
+  const [nEstimators, setNEstimators] = useState(300);
+  const [maxDepth, setMaxDepth] = useState<number | null>(10);
+  const [classWeight, setClassWeight] = useState<"balanced" | "none">("none");
   
   // JSON config state (for advanced mode)
   const [jsonConfig, setJsonConfig] = useState("{}");
@@ -56,6 +56,8 @@ export function CreatePresetDialog({ open, onOpenChange, onPresetCreated }: Crea
       
       if (classWeight === "balanced") {
         config.class_weight = "balanced";
+      } else if (classWeight === "none") {
+        config.class_weight = null;
       }
       
       setJsonConfig(JSON.stringify(config, null, 2));
@@ -142,9 +144,9 @@ export function CreatePresetDialog({ open, onOpenChange, onPresetCreated }: Crea
       setSelectedFile(null);
       setSelectedFeatures(AVAILABLE_FEATURES);
       setTestSize(0.2);
-      setNEstimators(100);
-      setMaxDepth(null);
-      setClassWeight("balanced");
+      setNEstimators(300);
+      setMaxDepth(10);
+      setClassWeight("none");
       setJsonConfig("{}");
       
       // Close dialog and notify parent with preset name

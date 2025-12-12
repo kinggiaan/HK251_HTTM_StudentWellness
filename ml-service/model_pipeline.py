@@ -367,14 +367,14 @@ def train_models(X_train, y_train, X_val, y_val, target_cols, preprocessor, conf
     """Train RandomForest models with preprocessing pipeline.
     
     Config parameters:
-    - n_estimators: Number of trees (default: 500)
-    - max_depth: Maximum depth of trees (default: None)
-    - class_weight: Class weight strategy (default: "balanced")
+    - n_estimators: Number of trees (default: 300)
+    - max_depth: Maximum depth of trees (default: 10)
+    - class_weight: Class weight strategy (default: None)
     """
     # Get model parameters from config with defaults
-    n_estimators = config.get("n_estimators", 500)
-    max_depth = config.get("max_depth", None)  # None/null means no limit
-    class_weight = config.get("class_weight", "balanced")
+    n_estimators = config.get("n_estimators", 300)
+    max_depth = config.get("max_depth", 10)
+    class_weight = config.get("class_weight", None)
     
     params = {
         "n_estimators": n_estimators,
