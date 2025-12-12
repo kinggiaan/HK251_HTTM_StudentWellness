@@ -70,12 +70,16 @@ This method is suitable for local development or simple server testing.
 
 2.  Create a Virtual Environment:
     ```bash
-    # Windows
+    # Windows (Powershell)
     python -m venv venv
     .\venv\Scripts\activate
 
     or
     .\venv\bin\Activate.ps1
+    > ⚠️ **Cảnh báo cho Windows**: Nếu bạn có càiMSYS2/MinGW, lệnh `python` có thể trỏ đến Pythoncủa MSYS2 thay vì Python chuẩn. Điều này gây ralỗi SSL khi cài packages. **Hãy dùng `py -3` thayvì `python`** để đảm bảo sử dụng Python Launchercủa Windows.
+    >
+    > Kiểm tra Python đang dùng: `py --list`
+
 
     # Linux/Mac
     python3 -m venv venv
