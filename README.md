@@ -74,6 +74,9 @@ This method is suitable for local development or simple server testing.
     python -m venv venv
     .\venv\Scripts\activate
 
+    or
+    .\venv\bin\Activate.ps1
+
     # Linux/Mac
     python3 -m venv venv
     source venv/bin/activate
@@ -83,6 +86,10 @@ This method is suitable for local development or simple server testing.
     ```bash
     pip install -r requirements.txt
     ```
+    If fail try upgrade pip, and try again: 
+    ```bash
+    python.exe -m pip install --upgrade pip
+    ``` 
 
 4.  Start the Service:
     ```bash
