@@ -172,6 +172,20 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
   const [activeTab, setActiveTab] = useState<"basic" | "mental" | "lifestyle" | "background" | "academic">("basic");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [shouldRefetch, setShouldRefetch] = useState(0);
+  
+  // Listen for model deployment events from DataScientist dashboard
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'model_deployed') {
+        console.log('🔄 Model deployed - refreshing student data...');
+        setShouldRefetch(prev => prev + 1);
+        toast.success('New model deployed! Student predictions updated.');
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Export to CSV function
   const handleExportCSV = async () => {

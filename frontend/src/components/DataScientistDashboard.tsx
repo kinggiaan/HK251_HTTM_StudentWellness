@@ -436,7 +436,7 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
         <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-5 border-2 border-red-200 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <AlertCircle className="w-6 h-6 text-red-700" aria-hidden="true" />
-            <div className="text-xs font-['Poppins:Medium',sans-serif] text-red-700">Có Depression</div>
+            <div className="text-xs font-['Poppins:Medium',sans-serif] text-red-700">Depressed</div>
           </div>
           <div className="text-3xl font-['Poppins:Bold',sans-serif] text-red-900">{hasDepression}</div>
           <div className="text-xs text-red-600 mt-1">{totalStudents > 0 ? Math.round((hasDepression / totalStudents) * 100) : 0}% of total</div>
@@ -445,7 +445,7 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-5 border-2 border-green-200 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <CheckCircle2 className="w-6 h-6 text-green-700" aria-hidden="true" />
-            <div className="text-xs font-['Poppins:Medium',sans-serif] text-green-700">Không Depression</div>
+            <div className="text-xs font-['Poppins:Medium',sans-serif] text-green-700">Not Depressed</div>
           </div>
           <div className="text-3xl font-['Poppins:Bold',sans-serif] text-green-900">{noDepression}</div>
           <div className="text-xs text-green-600 mt-1">{totalStudents > 0 ? Math.round((noDepression / totalStudents) * 100) : 0}% of total</div>
@@ -1264,8 +1264,12 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
       
       await mlService.deployPreset(selectedPresetName);
       
+      // Broadcast deploy event to other tabs/dashboards
+      localStorage.setItem('model_deployed', Date.now().toString());
+      window.dispatchEvent(new Event('storage'));
+      
       toast.dismiss();
-      toast.success(`Preset "${selectedPresetName}" deployed successfully!`);
+      toast.success(`Preset "${selectedPresetName}" deployed successfully! All predictions updated.`);
       await reloadPresets();
     } catch (e: any) {
       toast.dismiss();

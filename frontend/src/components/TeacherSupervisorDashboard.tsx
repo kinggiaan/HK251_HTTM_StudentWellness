@@ -192,6 +192,20 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
   const [selectedStudentForEdit, setSelectedStudentForEdit] = useState<Student | null>(null);
   const [shouldRefetch, setShouldRefetch] = useState(0);
   const [showImportModal, setShowImportModal] = useState(false);
+  
+  // Listen for model deployment events from DataScientist dashboard
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'model_deployed') {
+        console.log('🔄 Model deployed - refreshing student data...');
+        setShouldRefetch(prev => prev + 1);
+        toast.success('New model deployed! Student predictions updated.');
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Delete student handler
   const handleDeleteStudent = async (student: any) => {

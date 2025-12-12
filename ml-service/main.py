@@ -1,7 +1,20 @@
 import uvicorn
+import os
+import sys
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
+
+# Get the directory where main.py is located
+BASE_DIR = Path(__file__).resolve().parent
+
+# Change working directory to ml-service folder (for relative imports and paths)
+os.chdir(BASE_DIR)
+
+# Add BASE_DIR to sys.path for imports
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
 
 # Load environment variables from .env file
 load_dotenv()
@@ -18,7 +31,10 @@ app = FastAPI(
 )
 
 manager = get_manager()
-app.mount("/static", StaticFiles(directory="public"), name="static")
+
+# Use absolute path for static files directory
+public_dir = BASE_DIR / "public"
+app.mount("/static", StaticFiles(directory=str(public_dir)), name="static")
 app.include_router(router)
 
 

@@ -120,9 +120,9 @@ This method is suitable for local development or simple server testing.
 
 You can log in using the following pre-created demo accounts:
 
-- supervisor/12345678  
-- engineer/12345678  
-- consultant/12345678  
+- supervisor@gmail.com/12345678  
+- engineer@gmail.com/12345678  
+- consultant@gmail.com/12345678  
 
 ---
 

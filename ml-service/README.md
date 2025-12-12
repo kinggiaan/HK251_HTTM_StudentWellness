@@ -1,8 +1,48 @@
 # How to run?
 1. `python -m venv venv`
-2. `source ./venv/bin/activate`
+2. `source ./venv/bin/activate` (Linux/Mac) hoặc `.\venv\Scripts\activate` (Windows)
 3. `pip install -r requirements.txt`
 4. `python main.py`
+
+ML Service sẽ chạy tại: **http://localhost:8000**
+
+# Environment Variables (Required for Auto-Predict)
+
+Để sử dụng tính năng **Auto-Predict** khi deploy model, bạn cần cấu hình file `.env`:
+
+## Setup .env file:
+
+1. Copy file template:
+```bash
+cp .env.template .env
+```
+
+2. Mở file `.env` và điền thông tin:
+```env
+# Strapi Backend URL
+BACKEND_URL=http://localhost:1337
+
+# Strapi User Credentials (user có quyền đọc/sửa students)
+ADMIN_EMAIL=your-email@example.com
+ADMIN_PASSWORD=your-password
+```
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `BACKEND_URL` | No (default: `http://localhost:1337`) | URL của Strapi Backend |
+| `ADMIN_EMAIL` | **Yes** | Email của user Strapi |
+| `ADMIN_PASSWORD` | **Yes** | Password của user |
+
+⚠️ **QUAN TRỌNG**: 
+- File `.env` chứa thông tin nhạy cảm, **KHÔNG ĐƯỢC commit lên git**
+- File `.env` đã được thêm vào `.gitignore`
+
+## Tính năng Auto-Predict:
+Khi deploy một preset, hệ thống sẽ tự động:
+1. Đăng nhập vào Strapi với credentials từ `.env`
+2. Lấy danh sách tất cả students
+3. Chạy prediction cho từng student với model mới
+4. Cập nhật kết quả `depression_predicting` vào database
 
 # Available features:
 ```
