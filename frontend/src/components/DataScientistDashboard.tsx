@@ -454,28 +454,82 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
 
       {/* Risk Distribution and Dataset Statistics Grid */}
       <div className="grid grid-cols-2 gap-6 mb-6">
-        {/* Risk Distribution */}
+        {/* Depression Distribution - Prediction vs Consultant */}
         <div className="bg-white rounded-[8px] p-[24px] shadow-sm border border-gray-200">
         <div className="flex flex-col gap-[16px]">
           <p className="font-['Poppins:SemiBold',sans-serif] text-[#0c1e33] text-[16px]">Depression Distribution</p>
           
-          <div className="flex flex-col gap-[12px] mt-[8px]">
-            {/* Has Depression */}
-            <div className="flex items-center gap-[12px]">
-              <div className="w-[100px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[12px]">Có Depression</div>
-              <div className="flex-1 h-[28px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
-                <div className="h-full bg-[#eb5757] transition-all" style={{ width: `${totalStudents > 0 ? (hasDepression / totalStudents) * 100 : 0}%` }}></div>
+          {/* Model Prediction Section */}
+          <div className="mb-4">
+            <p className="font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px] mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              Model Prediction (AI)
+            </p>
+            <div className="flex flex-col gap-[12px] pl-4">
+              {/* Has Depression - Prediction */}
+              <div className="flex items-center gap-[12px]">
+                <div className="w-[120px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">Has Depression</div>
+                <div className="flex-1 h-[24px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
+                  <div className="h-full bg-[#eb5757] transition-all" style={{ width: `${totalStudents > 0 ? (hasDepression / totalStudents) * 100 : 0}%` }}></div>
+                </div>
+                <div className="w-[70px] text-right font-['Poppins:Bold',sans-serif] text-[#eb5757] text-[13px]">{hasDepression} ({totalStudents > 0 ? Math.round((hasDepression / totalStudents) * 100) : 0}%)</div>
               </div>
-              <div className="w-[60px] text-right font-['Poppins:Bold',sans-serif] text-[#eb5757] text-[14px]">{hasDepression} ({totalStudents > 0 ? Math.round((hasDepression / totalStudents) * 100) : 0}%)</div>
-            </div>
 
-            {/* No Depression */}
-            <div className="flex items-center gap-[12px]">
-              <div className="w-[100px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[12px]">Không Depression</div>
-              <div className="flex-1 h-[28px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
-                <div className="h-full bg-[#27ae60] transition-all" style={{ width: `${totalStudents > 0 ? (noDepression / totalStudents) * 100 : 0}%` }}></div>
+              {/* No Depression - Prediction */}
+              <div className="flex items-center gap-[12px]">
+                <div className="w-[120px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">No Depression</div>
+                <div className="flex-1 h-[24px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
+                  <div className="h-full bg-[#27ae60] transition-all" style={{ width: `${totalStudents > 0 ? (noDepression / totalStudents) * 100 : 0}%` }}></div>
+                </div>
+                <div className="w-[70px] text-right font-['Poppins:Bold',sans-serif] text-[#27ae60] text-[13px]">{noDepression} ({totalStudents > 0 ? Math.round((noDepression / totalStudents) * 100) : 0}%)</div>
               </div>
-              <div className="w-[60px] text-right font-['Poppins:Bold',sans-serif] text-[#27ae60] text-[14px]">{noDepression} ({totalStudents > 0 ? Math.round((noDepression / totalStudents) * 100) : 0}%)</div>
+            </div>
+          </div>
+
+          {/* Consultant Result Section */}
+          <div>
+            <p className="font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px] mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+              Consultant Validated ({students.filter(s => s.validated).length} students)
+            </p>
+            <div className="flex flex-col gap-[12px] pl-4">
+              {/* Has Depression - Consultant */}
+              <div className="flex items-center gap-[12px]">
+                <div className="w-[120px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">Has Depression</div>
+                <div className="flex-1 h-[24px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
+                  <div className="h-full bg-[#9b59b6] transition-all" style={{ width: `${(() => {
+                    const validatedStudents = students.filter(s => s.validated);
+                    const consultantDepression = validatedStudents.filter(s => s.depression_truth === 1).length;
+                    return validatedStudents.length > 0 ? (consultantDepression / validatedStudents.length) * 100 : 0;
+                  })()}%` }}></div>
+                </div>
+                <div className="w-[70px] text-right font-['Poppins:Bold',sans-serif] text-[#9b59b6] text-[13px]">
+                  {(() => {
+                    const validatedStudents = students.filter(s => s.validated);
+                    const consultantDepression = validatedStudents.filter(s => s.depression_truth === 1).length;
+                    return `${consultantDepression} (${validatedStudents.length > 0 ? Math.round((consultantDepression / validatedStudents.length) * 100) : 0}%)`;
+                  })()}
+                </div>
+              </div>
+
+              {/* No Depression - Consultant */}
+              <div className="flex items-center gap-[12px]">
+                <div className="w-[120px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">No Depression</div>
+                <div className="flex-1 h-[24px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
+                  <div className="h-full bg-[#16a085] transition-all" style={{ width: `${(() => {
+                    const validatedStudents = students.filter(s => s.validated);
+                    const consultantNoDepression = validatedStudents.filter(s => s.depression_truth === 0).length;
+                    return validatedStudents.length > 0 ? (consultantNoDepression / validatedStudents.length) * 100 : 0;
+                  })()}%` }}></div>
+                </div>
+                <div className="w-[70px] text-right font-['Poppins:Bold',sans-serif] text-[#16a085] text-[13px]">
+                  {(() => {
+                    const validatedStudents = students.filter(s => s.validated);
+                    const consultantNoDepression = validatedStudents.filter(s => s.depression_truth === 0).length;
+                    return `${consultantNoDepression} (${validatedStudents.length > 0 ? Math.round((consultantNoDepression / validatedStudents.length) * 100) : 0}%)`;
+                  })()}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -673,8 +727,8 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
                     <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student ID</th>
                     <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Age</th>
                     <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Degree</th>
-                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Risk Level</th>
                     <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Prediction</th>
+                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Consultant Result</th>
                     <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Validated</th>
                   </tr>
                 </thead>
@@ -686,35 +740,26 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
                       <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.age}</td>
                       <td className="py-[12px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.course}</td>
                       <td className="py-[12px] px-[12px] text-center">
-                        <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full inline-flex items-center gap-1 ${
-                          student.riskLevel === "Has Depression" ? "bg-red-100 text-red-700 border-2 border-red-400" :
-                          "bg-green-100 text-green-700 border-2 border-green-400"
+                        <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full ${
+                          student.depressionPredicting === 1 
+                            ? "bg-red-100 text-red-700 border-2 border-red-400" 
+                            : "bg-green-100 text-green-700 border-2 border-green-400"
                         }`}>
-                          {student.riskLevel === "Has Depression" ? (
-                            <>
-                              <AlertCircle className="w-3 h-3" aria-hidden="true" />
-                              <span>⚠️ Has Depression</span>
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
-                              <span>✅ No Depression</span>
-                            </>
-                          )}
+                          {student.depressionPredicting === 1 ? 'Has Depression' : 'No Depression'}
                         </span>
                       </td>
                       <td className="py-[12px] px-[12px] text-center">
-                        <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full inline-flex items-center gap-1 ${
-                          student.prediction === 'Has Depression' 
-                            ? "bg-red-100 text-red-700 border-2 border-red-400" 
-                            : student.prediction === 'No Depression'
-                            ? "bg-green-100 text-green-700 border-2 border-green-400"
-                            : "bg-gray-100 text-gray-600 border-2 border-gray-300"
-                        }`}>
-                          {student.prediction === 'Has Depression' && "⚠️"}
-                          {student.prediction === 'No Depression' && "✅"}
-                          {student.prediction || 'N/A'}
-                        </span>
+                        {student.validated ? (
+                          <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full ${
+                            student.depressionTruth === 1
+                              ? "bg-red-100 text-red-700 border-2 border-red-400" 
+                              : "bg-green-100 text-green-700 border-2 border-green-400"
+                          }`}>
+                            {student.depressionTruth === 1 ? 'Has Depression' : 'No Depression'}
+                          </span>
+                        ) : (
+                          <span className="font-['Poppins:Regular',sans-serif] text-[11px] text-gray-400">Not validated</span>
+                        )}
                       </td>
                       <td className="py-[12px] px-[12px] text-center">
                         {student.validated ? (
@@ -918,6 +963,7 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
   const [performance, setPerformance] = useState<MLPerformance | null>(null);
   const [isLoadingPerformance, setIsLoadingPerformance] = useState(false);
   const [presetStates, setPresetStates] = useState<Record<string, MLPresetState>>({});
+  const [isDeploying, setIsDeploying] = useState(false);
   function openConfigDialog() {
     if (!hasPermission("mlModels.manage")) {
       toast.error("You do not have permission to manage ML models.");
@@ -1222,11 +1268,19 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
         return;
       }
       
+      setIsDeploying(true);
+      toast.loading('Deploying model and updating predictions...', { duration: Infinity });
+      
       await mlService.deployPreset(selectedPresetName);
+      
+      toast.dismiss();
       toast.success(`Preset "${selectedPresetName}" deployed successfully!`);
       await reloadPresets();
     } catch (e: any) {
+      toast.dismiss();
       toast.error(e?.message ?? "Failed to deploy preset");
+    } finally {
+      setIsDeploying(false);
     }
   }
 
@@ -1279,17 +1333,30 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                     <button
                       onClick={handleDeployLatest}
                       disabled={
+                        isDeploying ||
                         isLoadingPresets || 
                         !selectedPresetName || 
                         presets.find(p => p.name === selectedPresetName)?.status !== 'trained'
                       }
                       className="px-5 py-2.5 bg-[#16a34a] text-white text-sm font-semibold rounded-lg hover:bg-[#15803d] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 hover:shadow-lg flex items-center gap-2 cursor-pointer"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                          d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      Deploy
+                      {isDeploying ? (
+                        <>
+                          <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Deploying...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                              d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                          Deploy
+                        </>
+                      )}
                     </button>
                   </div>
                 )}

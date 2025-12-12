@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { MentalHealthRecord } from "../data/mockMentalHealth";
 import { teacherNotifications } from "../data/mockNotificationsByRole";
 import { NotificationPanel } from "./NotificationPanel";
-import { Users, Search as SearchIcon, AlertCircle, AlertTriangle, CheckCircle2, Edit, Upload } from "lucide-react";
+import { Users, Search as SearchIcon, AlertCircle, AlertTriangle, CheckCircle2, Edit, Upload, Trash2 } from "lucide-react";
 import svgPaths from "../imports/svg-ws6xw1un37";
 import img from "figma:asset/b84a227f158a096d5fb31a5a5f2dd6c595e78767.png";
 import { useAuth } from "../contexts/AuthContext";
@@ -10,6 +10,7 @@ import { usePermissions } from "../contexts/PermissionsContext";
 import { useStudents } from "../hooks/useStudents";
 import { transformStudentsToMentalHealthRecords } from "../utils/dataTransform";
 import { toast } from "sonner";
+import { apiClient } from "../lib/api";
 import { EditStudentModal } from "./EditStudentModal";
 import { ImportStudentsModal } from "./ImportStudentsModal";
 import type { Student } from "../services/students.service";
@@ -162,6 +163,22 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
   );
 }
 
+// Helper function to parse sleep duration strings to hours
+function parseSleepDuration(sleepDuration: string | undefined | null): number {
+  if (!sleepDuration) return 7; // default
+  const lower = sleepDuration.toLowerCase();
+  
+  // Handle common formats
+  if (lower.includes('less than 5') || lower.includes('<5')) return 4;
+  if (lower.includes('5-6')) return 5.5;
+  if (lower.includes('7-8')) return 7.5;
+  if (lower.includes('more than 8') || lower.includes('>8')) return 9;
+  
+  // Try to extract number
+  const match = sleepDuration.match(/(\d+)/);
+  return match ? parseInt(match[1]) : 7;
+}
+
 export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout }: TeacherSupervisorDashboardProps) {
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
@@ -175,6 +192,35 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
   const [selectedStudentForEdit, setSelectedStudentForEdit] = useState<Student | null>(null);
   const [shouldRefetch, setShouldRefetch] = useState(0);
   const [showImportModal, setShowImportModal] = useState(false);
+
+  // Delete student handler
+  const handleDeleteStudent = async (student: any) => {
+    if (!student.actualStudentData) {
+      toast.error('Cannot delete student: data not available');
+      return;
+    }
+
+    const studentName = student.studentName || 'this student';
+    const confirmed = window.confirm(`Are you sure you want to delete ${studentName}?\n\nThis action cannot be undone.`);
+    
+    if (!confirmed) return;
+
+    try {
+      const documentId = student.actualStudentData.documentId || student.actualStudentData.id;
+      
+      if (!documentId) {
+        toast.error('Cannot delete: Student ID not found');
+        return;
+      }
+
+      await apiClient.delete(`/api/students/${documentId}`);
+      toast.success(`Successfully deleted ${studentName}`);
+      setShouldRefetch(prev => prev + 1); // Trigger refetch
+    } catch (error: any) {
+      console.error('Delete failed:', error);
+      toast.error(error.message || 'Failed to delete student');
+    }
+  };
 
   // Debounce search input
   useEffect(() => {
@@ -282,7 +328,7 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
       anxietyScore: Math.floor(Math.random() * 5) + 1,
       moodRating: Math.floor(Math.random() * 5) + 1,
       sleepQuality: record.sleepQuality || "Good",
-      sleepHours: record.sleepHours || 7,
+      sleepHours: parseSleepDuration(actualStudent?.sleep_duration),
       physicalActivity: record.physicalActivity || "Moderate",
       dietQuality: "Balanced",
       familyHistory: record.familyHistory || "No",
@@ -294,6 +340,9 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
       jobSatisfaction: record.jobSatisfaction || actualStudent?.job_satisfaction,
       prediction: record.prediction || (record.riskLevel === "has-depression" ? "Has Depression" : "No Depression"),
       validated: actualStudent?.validated || false,
+      depression_predicting: actualStudent?.depression_predicting,
+      depression_truth: actualStudent?.depression_truth,
+      academicPressure: actualStudent?.academic_pressure,
       actualStudentData: actualStudent // Add this to enable Edit button
     };
   });
@@ -325,6 +374,179 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
         />
         <Welcome />
         <WelcomeHelp />
+
+        {/* Statistics Grid */}
+        <div className="px-8 mt-6 grid grid-cols-2 gap-6">
+          {/* Depression Distribution */}
+          <div className="bg-white rounded-[8px] p-[24px] shadow-sm border border-gray-200">
+            <div className="flex flex-col gap-[16px]">
+              <p className="font-['Poppins:SemiBold',sans-serif] text-[#0c1e33] text-[16px]">Depression Distribution</p>
+              
+              {/* Model Prediction Section */}
+              <div className="mb-4">
+                <p className="font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px] mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  Model Prediction (AI)
+                </p>
+                <div className="flex flex-col gap-[12px] pl-4">
+                  {/* Has Depression - Prediction */}
+                  <div className="flex items-center gap-[12px]">
+                    <div className="w-[120px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">Has Depression</div>
+                    <div className="flex-1 h-[24px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
+                      <div className="h-full bg-[#eb5757] transition-all" style={{ 
+                        width: `${(() => {
+                          const totalStudents = filteredStudents.length;
+                          const hasDepression = filteredStudents.filter(s => s.depression_predicting === 1).length;
+                          return totalStudents > 0 ? (hasDepression / totalStudents) * 100 : 0;
+                        })()}%` 
+                      }}></div>
+                    </div>
+                    <div className="w-[70px] text-right font-['Poppins:Bold',sans-serif] text-[#eb5757] text-[13px]">
+                      {(() => {
+                        const totalStudents = filteredStudents.length;
+                        const hasDepression = filteredStudents.filter(s => s.depression_predicting === 1).length;
+                        return `${hasDepression} (${totalStudents > 0 ? Math.round((hasDepression / totalStudents) * 100) : 0}%)`;
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* No Depression - Prediction */}
+                  <div className="flex items-center gap-[12px]">
+                    <div className="w-[120px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">No Depression</div>
+                    <div className="flex-1 h-[24px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
+                      <div className="h-full bg-[#27ae60] transition-all" style={{ 
+                        width: `${(() => {
+                          const totalStudents = filteredStudents.length;
+                          const noDepression = filteredStudents.filter(s => s.depression_predicting === 0).length;
+                          return totalStudents > 0 ? (noDepression / totalStudents) * 100 : 0;
+                        })()}%` 
+                      }}></div>
+                    </div>
+                    <div className="w-[70px] text-right font-['Poppins:Bold',sans-serif] text-[#27ae60] text-[13px]">
+                      {(() => {
+                        const totalStudents = filteredStudents.length;
+                        const noDepression = filteredStudents.filter(s => s.depression_predicting === 0).length;
+                        return `${noDepression} (${totalStudents > 0 ? Math.round((noDepression / totalStudents) * 100) : 0}%)`;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Consultant Validated Section */}
+              <div>
+                <p className="font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px] mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                  Consultant Validated ({filteredStudents.filter(s => s.validated).length} students)
+                </p>
+                <div className="flex flex-col gap-[12px] pl-4">
+                  {/* Has Depression - Consultant */}
+                  <div className="flex items-center gap-[12px]">
+                    <div className="w-[120px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">Has Depression</div>
+                    <div className="flex-1 h-[24px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
+                      <div className="h-full bg-[#9b59b6] transition-all" style={{ 
+                        width: `${(() => {
+                          const validatedStudents = filteredStudents.filter(s => s.validated);
+                          const consultantDepression = validatedStudents.filter(s => s.depression_truth === 1).length;
+                          return validatedStudents.length > 0 ? (consultantDepression / validatedStudents.length) * 100 : 0;
+                        })()}%` 
+                      }}></div>
+                    </div>
+                    <div className="w-[70px] text-right font-['Poppins:Bold',sans-serif] text-[#9b59b6] text-[13px]">
+                      {(() => {
+                        const validatedStudents = filteredStudents.filter(s => s.validated);
+                        const consultantDepression = validatedStudents.filter(s => s.depression_truth === 1).length;
+                        return `${consultantDepression} (${validatedStudents.length > 0 ? Math.round((consultantDepression / validatedStudents.length) * 100) : 0}%)`;
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* No Depression - Consultant */}
+                  <div className="flex items-center gap-[12px]">
+                    <div className="w-[120px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">No Depression</div>
+                    <div className="flex-1 h-[24px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
+                      <div className="h-full bg-[#16a085] transition-all" style={{ 
+                        width: `${(() => {
+                          const validatedStudents = filteredStudents.filter(s => s.validated);
+                          const consultantNoDepression = validatedStudents.filter(s => s.depression_truth === 0).length;
+                          return validatedStudents.length > 0 ? (consultantNoDepression / validatedStudents.length) * 100 : 0;
+                        })()}%` 
+                      }}></div>
+                    </div>
+                    <div className="w-[70px] text-right font-['Poppins:Bold',sans-serif] text-[#16a085] text-[13px]">
+                      {(() => {
+                        const validatedStudents = filteredStudents.filter(s => s.validated);
+                        const consultantNoDepression = validatedStudents.filter(s => s.depression_truth === 0).length;
+                        return `${consultantNoDepression} (${validatedStudents.length > 0 ? Math.round((consultantNoDepression / validatedStudents.length) * 100) : 0}%)`;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-[16px] pt-[16px] border-t border-[#e5e5e5]">
+                <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">
+                  Total Students: <span className="font-['Poppins:Bold',sans-serif] text-[#0c1e33]">{filteredStudents.length}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Dataset Statistics */}
+          <div className="bg-white rounded-[8px] p-[24px] shadow-sm border border-gray-200">
+            <div className="flex flex-col gap-[16px]">
+              <p className="font-['Poppins:SemiBold',sans-serif] text-[#0c1e33] text-[16px]">Dataset Statistics</p>
+              
+              <div className="grid grid-cols-2 gap-[16px] mt-[8px]">
+                <div className="bg-[#f4f6f7] rounded-[8px] p-[16px]">
+                  <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px] mb-[4px]">Avg Academic Pressure</p>
+                  <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[24px]">
+                    {(() => {
+                      const validPressures = filteredStudents.filter(s => s.academicPressure != null);
+                      const avg = validPressures.length > 0 
+                        ? (validPressures.reduce((sum, s) => sum + (s.academicPressure || 0), 0) / validPressures.length)
+                        : 0;
+                      return `${avg.toFixed(1)}/5`;
+                    })()}
+                  </p>
+                </div>
+                
+                <div className="bg-[#f4f6f7] rounded-[8px] p-[16px]">
+                  <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px] mb-[4px]">Avg Sleep Hours</p>
+                  <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[24px]">
+                    {(() => {
+                      const validSleep = filteredStudents.filter(s => s.sleepHours != null);
+                      const avg = validSleep.length > 0 
+                        ? (validSleep.reduce((sum, s) => sum + (s.sleepHours || 0), 0) / validSleep.length)
+                        : 0;
+                      return `${avg.toFixed(1)}h`;
+                    })()}
+                  </p>
+                </div>
+
+                <div className="bg-[#f4f6f7] rounded-[8px] p-[16px]">
+                  <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px] mb-[4px]">Total Students</p>
+                  <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[24px]">
+                    {filteredStudents.length}
+                  </p>
+                </div>
+
+                <div className="bg-[#f4f6f7] rounded-[8px] p-[16px]">
+                  <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px] mb-[4px]">Validated</p>
+                  <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[24px]">
+                    {filteredStudents.filter(s => s.validated).length}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-[8px] bg-[#e8f4fd] rounded-[8px] p-[12px] border border-[#4c85e9]/20">
+                <p className="font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[11px]">
+                  <span className="font-['Poppins:Bold',sans-serif]">Pending Validation:</span> {filteredStudents.filter(s => !s.validated).length} students
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Students Tracker Table - Scrollable Version */}
         <div className="px-8 mt-6">
@@ -525,8 +747,8 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                         <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student ID</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Age</th>
                         <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Degree</th>
-                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Risk Level</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Prediction</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Consultant Result</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Validated</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Actions</th>
                       </tr>
@@ -539,24 +761,22 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                           <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.age}</td>
                           <td className="py-[12px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.course}</td>
                           <td className="py-[12px] px-[12px] text-center">
-                            <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full inline-flex items-center gap-1 ${
-                              student.riskLevel === "Has Depression" ? "bg-red-100 text-red-700 border-2 border-red-400" :
+                            <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full ${
+                              student.depression_predicting === 1 ? "bg-red-100 text-red-700 border-2 border-red-400" :
                               "bg-green-100 text-green-700 border-2 border-green-400"
                             }`}>
-                              {student.riskLevel === "Has Depression" ? "⚠️" : "✅"} {student.riskLevel}
+                              {student.depression_predicting === 1 ? 'Has Depression' : 'No Depression'}
                             </span>
                           </td>
                           <td className="py-[12px] px-[12px] text-center">
-                            <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full inline-flex items-center gap-1 ${
-                              student.prediction === 'Has Depression' 
+                            <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full ${
+                              !student.validated
+                                ? "bg-gray-100 text-gray-600 border-2 border-gray-300"
+                                : student.depression_truth === 1 
                                 ? "bg-red-100 text-red-700 border-2 border-red-400" 
-                                : student.prediction === 'No Depression'
-                                ? "bg-green-100 text-green-700 border-2 border-green-400"
-                                : "bg-gray-100 text-gray-600 border-2 border-gray-300"
+                                : "bg-green-100 text-green-700 border-2 border-green-400"
                             }`}>
-                              {student.prediction === 'Has Depression' && "⚠️"}
-                              {student.prediction === 'No Depression' && "✅"}
-                              {student.prediction || 'N/A'}
+                              {!student.validated ? 'Not validated' : (student.depression_truth === 1 ? 'Has Depression' : 'No Depression')}
                             </span>
                           </td>
                           <td className="py-[12px] px-[12px] text-center">
@@ -572,15 +792,28 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                             )}
                           </td>
                           <td className="py-[12px] px-[12px] text-center">
-                            <button
-                              onClick={() => student.actualStudentData && setSelectedStudentForEdit(student.actualStudentData)}
-                              disabled={!student.actualStudentData}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-['Poppins:Medium',sans-serif] text-[11px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Edit student information"
-                            >
-                              <Edit className="w-3.5 h-3.5" />
-                              Edit
-                            </button>
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => student.actualStudentData && setSelectedStudentForEdit(student.actualStudentData)}
+                                disabled={!student.actualStudentData}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-['Poppins:Medium',sans-serif] text-[11px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Edit student information"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                                Edit
+                              </button>
+                              {hasPermission("students.delete") && (
+                                <button
+                                  onClick={() => handleDeleteStudent(student)}
+                                  disabled={!student.actualStudentData}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-['Poppins:Medium',sans-serif] text-[11px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Delete student"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  Delete
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}

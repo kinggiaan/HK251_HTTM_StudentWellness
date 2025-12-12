@@ -1,6 +1,10 @@
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from api import router, get_manager
 from model_manager import ModelManager

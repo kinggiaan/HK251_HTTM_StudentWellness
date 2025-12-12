@@ -33,7 +33,7 @@ const PermissionsContext = createContext<PermissionsContextValue | undefined>(un
 
 const DEFAULT_MATRIX: PermissionMatrix = {
   consultant: { "students.export": true, "students.import": true },
-  teacher_supervisor: { "students.export": false, "students.import": true },
+  teacher_supervisor: { "students.export": false, "students.import": true, "students.delete": true },
   data_scientist: { "students.viewAll": true, "students.export": true, "datasets.manage": true, "mlModels.manage": true, "analytics.viewAll": true }
 };
 

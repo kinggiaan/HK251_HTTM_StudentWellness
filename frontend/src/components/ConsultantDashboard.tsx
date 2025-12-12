@@ -359,6 +359,8 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
       jobSatisfaction: record.jobSatisfaction || actualStudent?.job_satisfaction,
       prediction: record.prediction || (record.riskLevel === "has-depression" ? "Has Depression" : "No Depression"),
       validated: actualStudent?.validated || false,
+      depression_predicting: actualStudent?.depression_predicting,
+      depression_truth: actualStudent?.depression_truth,
       actualStudentData: actualStudent
     };
   });
@@ -390,6 +392,126 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
         />
         <Welcome userName={user?.name} />
         <WelcomeHelp />
+        
+        {/* Depression Distribution Chart */}
+        <div className="px-8 mt-6">
+          <div className="bg-white rounded-[8px] p-[24px] shadow-sm border border-gray-200">
+            <div className="flex flex-col gap-[16px]">
+              <p className="font-['Poppins:SemiBold',sans-serif] text-[#0c1e33] text-[16px]">Depression Distribution</p>
+              
+              {/* Model Prediction Section */}
+              <div className="mb-4">
+                <p className="font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px] mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  Model Prediction (AI)
+                </p>
+                <div className="flex flex-col gap-[12px] pl-4">
+                  {/* Has Depression - Prediction */}
+                  <div className="flex items-center gap-[12px]">
+                    <div className="w-[120px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">Has Depression</div>
+                    <div className="flex-1 h-[24px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
+                      <div className="h-full bg-[#eb5757] transition-all" style={{ 
+                        width: `${(() => {
+                          const totalStudents = filteredStudents.length;
+                          const hasDepression = filteredStudents.filter(s => s.depression_predicting === 1).length;
+                          return totalStudents > 0 ? (hasDepression / totalStudents) * 100 : 0;
+                        })()}%` 
+                      }}></div>
+                    </div>
+                    <div className="w-[70px] text-right font-['Poppins:Bold',sans-serif] text-[#eb5757] text-[13px]">
+                      {(() => {
+                        const totalStudents = filteredStudents.length;
+                        const hasDepression = filteredStudents.filter(s => s.depression_predicting === 1).length;
+                        return `${hasDepression} (${totalStudents > 0 ? Math.round((hasDepression / totalStudents) * 100) : 0}%)`;
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* No Depression - Prediction */}
+                  <div className="flex items-center gap-[12px]">
+                    <div className="w-[120px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">No Depression</div>
+                    <div className="flex-1 h-[24px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
+                      <div className="h-full bg-[#27ae60] transition-all" style={{ 
+                        width: `${(() => {
+                          const totalStudents = filteredStudents.length;
+                          const noDepression = filteredStudents.filter(s => s.depression_predicting === 0).length;
+                          return totalStudents > 0 ? (noDepression / totalStudents) * 100 : 0;
+                        })()}%` 
+                      }}></div>
+                    </div>
+                    <div className="w-[70px] text-right font-['Poppins:Bold',sans-serif] text-[#27ae60] text-[13px]">
+                      {(() => {
+                        const totalStudents = filteredStudents.length;
+                        const noDepression = filteredStudents.filter(s => s.depression_predicting === 0).length;
+                        return `${noDepression} (${totalStudents > 0 ? Math.round((noDepression / totalStudents) * 100) : 0}%)`;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Consultant Validated Section */}
+              <div>
+                <p className="font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px] mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                  Consultant Validated ({filteredStudents.filter(s => s.validated).length} students)
+                </p>
+                <div className="flex flex-col gap-[12px] pl-4">
+                  {/* Has Depression - Consultant */}
+                  <div className="flex items-center gap-[12px]">
+                    <div className="w-[120px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">Has Depression</div>
+                    <div className="flex-1 h-[24px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
+                      <div className="h-full bg-[#9b59b6] transition-all" style={{ 
+                        width: `${(() => {
+                          const validatedStudents = filteredStudents.filter(s => s.validated);
+                          const consultantDepression = validatedStudents.filter(s => s.depression_truth === 1).length;
+                          return validatedStudents.length > 0 ? (consultantDepression / validatedStudents.length) * 100 : 0;
+                        })()}%` 
+                      }}></div>
+                    </div>
+                    <div className="w-[70px] text-right font-['Poppins:Bold',sans-serif] text-[#9b59b6] text-[13px]">
+                      {(() => {
+                        const validatedStudents = filteredStudents.filter(s => s.validated);
+                        const consultantDepression = validatedStudents.filter(s => s.depression_truth === 1).length;
+                        return `${consultantDepression} (${validatedStudents.length > 0 ? Math.round((consultantDepression / validatedStudents.length) * 100) : 0}%)`;
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* No Depression - Consultant */}
+                  <div className="flex items-center gap-[12px]">
+                    <div className="w-[120px] font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">No Depression</div>
+                    <div className="flex-1 h-[24px] bg-[#f4f6f7] rounded-[4px] overflow-hidden relative">
+                      <div className="h-full bg-[#16a085] transition-all" style={{ 
+                        width: `${(() => {
+                          const validatedStudents = filteredStudents.filter(s => s.validated);
+                          const consultantNoDepression = validatedStudents.filter(s => s.depression_truth === 0).length;
+                          return validatedStudents.length > 0 ? (consultantNoDepression / validatedStudents.length) * 100 : 0;
+                        })()}%` 
+                      }}></div>
+                    </div>
+                    <div className="w-[70px] text-right font-['Poppins:Bold',sans-serif] text-[#16a085] text-[13px]">
+                      {(() => {
+                        const validatedStudents = filteredStudents.filter(s => s.validated);
+                        const consultantNoDepression = validatedStudents.filter(s => s.depression_truth === 0).length;
+                        return `${consultantNoDepression} (${validatedStudents.length > 0 ? Math.round((consultantNoDepression / validatedStudents.length) * 100) : 0}%)`;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-[16px] pt-[16px] border-t border-[#e5e5e5]">
+                <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px]">
+                  Total Students: <span className="font-['Poppins:Bold',sans-serif] text-[#0c1e33]">{filteredStudents.length}</span>
+                  {' • '}
+                  Pending Validation: <span className="font-['Poppins:Bold',sans-serif] text-[#f39c12]">{filteredStudents.filter(s => !s.validated).length}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Students Tracker Table - Scrollable Version */}
         <div className="px-8 mt-6">
           {/* Title and Controls */}
@@ -580,8 +702,8 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
                         <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student ID</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Age</th>
                         <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Course</th>
-                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Risk Level</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Prediction</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Consultant Result</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Validated</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Actions</th>
                       </tr>
@@ -594,24 +716,22 @@ export function ConsultantDashboard({ onLogout }: ConsultantDashboardProps) {
                           <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.age}</td>
                           <td className="py-[12px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.course}</td>
                           <td className="py-[12px] px-[12px] text-center">
-                            <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full inline-flex items-center gap-1 ${
-                              student.riskLevel === "Has Depression" ? "bg-red-100 text-red-700 border-2 border-red-400" :
+                            <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full ${
+                              student.depression_predicting === 1 ? "bg-red-100 text-red-700 border-2 border-red-400" :
                               "bg-green-100 text-green-700 border-2 border-green-400"
                             }`}>
-                              {student.riskLevel === "Has Depression" ? "⚠️" : "✅"} {student.riskLevel}
+                              {student.depression_predicting === 1 ? 'Has Depression' : 'No Depression'}
                             </span>
                           </td>
                           <td className="py-[12px] px-[12px] text-center">
-                            <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full inline-flex items-center gap-1 ${
-                              student.prediction === 'Has Depression' 
+                            <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full ${
+                              !student.validated
+                                ? "bg-gray-100 text-gray-600 border-2 border-gray-300"
+                                : student.depression_truth === 1 
                                 ? "bg-red-100 text-red-700 border-2 border-red-400" 
-                                : student.prediction === 'No Depression'
-                                ? "bg-green-100 text-green-700 border-2 border-green-400"
-                                : "bg-gray-100 text-gray-600 border-2 border-gray-300"
+                                : "bg-green-100 text-green-700 border-2 border-green-400"
                             }`}>
-                              {student.prediction === 'Has Depression' && "⚠️"}
-                              {student.prediction === 'No Depression' && "✅"}
-                              {student.prediction || 'N/A'}
+                              {!student.validated ? 'Not validated' : (student.depression_truth === 1 ? 'Has Depression' : 'No Depression')}
                             </span>
                           </td>
                           <td className="py-[12px] px-[12px] text-center">

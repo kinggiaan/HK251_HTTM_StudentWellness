@@ -3,12 +3,18 @@ import os
 import shutil
 from pathlib import Path
 from typing import Optional
+import requests
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi import status
 
 from model_manager import ModelManager
+
+
+# Strapi configuration
+STRAPI_URL = os.getenv("STRAPI_URL", "http://localhost:1337")
+STRAPI_API_TOKEN = os.getenv("STRAPI_API_TOKEN", "")
 
 
 def get_manager() -> ModelManager:
@@ -181,7 +187,100 @@ async def deploy_preset(preset_name: str, manager: ModelManager = Depends(get_ma
     ok = manager.deploy_preset(preset_name)
     if not ok:
         raise HTTPException(status_code=500, detail="Failed to deploy preset")
-    return {"success": True, "message": f"Preset '{preset_name}' deployed successfully"}
+    
+    # Automatically re-predict all students with the newly deployed model
+    try:
+        await repreddict_all_students(preset_name, manager)
+    except Exception:
+        # Don't fail deployment if re-prediction fails
+        pass
+    
+    return {"success": True, "message": f"Preset '{preset_name}' deployed successfully and predictions updated"}
+
+
+async def repreddict_all_students(preset_name: str, manager: ModelManager):
+    """Re-predict all students in Strapi using the newly deployed preset."""
+    try:
+        # Fetch all students from Strapi
+        headers = {
+            "Authorization": f"Bearer {STRAPI_API_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.get(
+            f"{STRAPI_URL}/api/students?pagination[limit]=10000",
+            headers=headers
+        )
+        
+        if response.status_code != 200:
+            return
+        
+        data = response.json()
+        students = data.get("data", [])
+        
+        if not students:
+            return
+        
+        success_count = 0
+        failed_count = 0
+        
+        # Re-predict each student
+        for student in students:
+            try:
+                document_id = student.get("documentId")  # Use documentId for Strapi v4
+                
+                # Prepare features for prediction
+                # Map database field names to model expected names (with spaces and capital letters)
+                features = {
+                    "Gender": student.get("gender"),
+                    "Age": student.get("age"),
+                    "City": student.get("city"),
+                    "CGPA": student.get("cgpa"),
+                    "Degree": student.get("degree"),
+                    "Academic Pressure": student.get("academic_pressure"),
+                    "Study Satisfaction": student.get("study_satisfaction"),
+                    "Sleep Duration": student.get("sleep_duration"),
+                    "Dietary Habits": student.get("dietary_habits"),
+                    "Work/Study Hours": student.get("work_study_hours"),
+                    "Financial Stress": student.get("financial_stress"),
+                    "Family History of Mental Illness": student.get("family_his_of_mental_illness")
+                }
+                
+                # Skip if missing required fields
+                if not features.get("Age") or not features.get("Gender"):
+                    failed_count += 1
+                    continue
+                
+                # Run prediction
+                prediction_result = manager.predict(preset_name, features)
+                
+                # Extract prediction value (model returns {"prediction": [0]} or {"prediction": [1]})
+                prediction_list = prediction_result.get("prediction", [0])
+                depression_predicting = prediction_list[0] if prediction_list else 0
+                
+                # Update student in Strapi with new prediction AND reset validated status
+                # Use documentId instead of numeric id for Strapi v4
+                update_response = requests.put(
+                    f"{STRAPI_URL}/api/students/{document_id}",
+                    headers=headers,
+                    json={
+                        "data": {
+                            "depression_predicting": depression_predicting,
+                            "validated": False  # Reset validation status when deploying new model
+                        }
+                    }
+                )
+                
+                if update_response.status_code == 200:
+                    success_count += 1
+                else:
+                    failed_count += 1
+                    
+            except Exception as e:
+                failed_count += 1
+        
+    except Exception as e:
+        raise
 
 
 @router.post("/presets/{preset_name}/predict", tags=["prediction"], summary="Run prediction using a preset model")

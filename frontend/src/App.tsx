@@ -49,6 +49,16 @@ function AppContent({ user, isAuthenticated, isLoading, logout }: {
     );
   }
 
+  // Wrap all authenticated content with PermissionsProvider
+  return (
+    <PermissionsProvider>
+      <AuthenticatedApp user={user} logout={logout} />
+      <Toaster />
+    </PermissionsProvider>
+  );
+}
+
+function AuthenticatedApp({ user, logout }: { user: any; logout: () => void }) {
   // Map backend roles to frontend role types
   const roleMap: Record<string, "consultant" | "teacher" | "dataScientist" | "admin"> = {
     consultant: "consultant",
@@ -61,42 +71,21 @@ function AppContent({ user, isAuthenticated, isLoading, logout }: {
 
   // Show Consultant Dashboard if user is a consultant
   if (frontendRole === "consultant") {
-    return (
-      <PermissionsProvider>
-        <ConsultantDashboard onLogout={logout} />
-        <Toaster />
-      </PermissionsProvider>
-    );
+    return <ConsultantDashboard onLogout={logout} />;
   }
 
   // Show Teacher/Supervisor Dashboard if user is a teacher
   if (frontendRole === "teacher") {
-    return (
-      <PermissionsProvider>
-        <TeacherSupervisorDashboard onLogout={logout} />
-        <Toaster />
-      </PermissionsProvider>
-    );
+    return <TeacherSupervisorDashboard onLogout={logout} />;
   }
 
   // Show Data Scientist Dashboard if user is a data scientist
   if (frontendRole === "dataScientist") {
-    return (
-      <PermissionsProvider>
-        <DataScientistDashboard onLogout={logout} />
-        <Toaster />
-      </PermissionsProvider>
-    );
+    return <DataScientistDashboard onLogout={logout} />;
   }
 
-
   // Default fallback (should never reach here)
-  return (
-    <>
-      <LoginPage />
-      <Toaster />
-    </>
-  );
+  return <LoginPage />;
 }
 
 // Error fallback component
