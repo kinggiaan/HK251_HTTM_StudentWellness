@@ -569,15 +569,6 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
               </p>
             </div>
           </div>
-
-          <div className="mt-[8px] bg-[#e8f4fd] rounded-[8px] p-[12px] border border-[#4c85e9]/20">
-            <p className="font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[11px]">
-              <span className="font-['Poppins:Bold',sans-serif]">Last Training:</span> {latestTrained ? new Date(latestTrained.last_trained || latestTrained.created_at).toLocaleString() : 'Not trained yet'}
-            </p>
-            <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[10px] mt-[4px]">
-              Dataset: {latestTrained?.dataset_name || 'No dataset'} • Samples: {totalStudents}
-            </p>
-          </div>
         </div>
         </div>
       </div>
@@ -1860,52 +1851,6 @@ export function DataScientistDashboard({ onLogout }: DataScientistDashboardProps
                         <p className="text-sm">No feature importance data available</p>
                       </div>
                     )}
-                  </div>
-                </div>
-              )}
-
-              {/* Training Info Panel */}
-              {latestTrained && (
-                <div className="mt-8 bg-white border-2 border-gray-400 rounded-lg p-6 shadow-lg">
-                  <div className="flex items-center gap-2 mb-5">
-                    <Info className="w-6 h-6 text-gray-600" aria-hidden="true" />
-                    <h3 className="text-xl font-bold text-gray-900">Latest Model Information</h3>
-                  </div>
-                  <div className="grid grid-cols-5 gap-4">
-                    <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-400 shadow-sm">
-                      <div className="text-sm text-gray-900 font-bold mb-2 uppercase">Model Name</div>
-                      <div className="font-bold text-gray-900 text-base truncate" title={latestTrained.modelName}>
-                        {latestTrained.modelName}
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-400 shadow-sm">
-                      <div className="text-sm text-gray-900 font-bold mb-2 uppercase">Trained On</div>
-                      <div className="font-bold text-gray-900 text-base">
-                        {new Date(latestTrained.updatedAt || latestTrained.createdAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-400 shadow-sm">
-                      <div className="text-sm text-gray-900 font-bold mb-2 uppercase">Dataset</div>
-                      <div className="font-bold text-gray-900 text-base">
-                        {latestTrained.datasetName || 'Default Dataset'}
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-400 shadow-sm">
-                      <div className="text-sm text-gray-900 font-bold mb-2 uppercase">Training Time</div>
-                      <div className="font-bold text-gray-900 text-base">
-                        {latestTrained.trainingTime ? `${(latestTrained.trainingTime / 1000).toFixed(1)}s` : '—'}
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-400 shadow-sm">
-                      <div className="text-sm text-gray-900 font-bold mb-2 uppercase">Samples</div>
-                      <div className="font-bold text-gray-900 text-base">
-                        {latestTrained.sampleSize || extendedMockStudents.length}
-                      </div>
-                    </div>
                   </div>
                 </div>
               )}
