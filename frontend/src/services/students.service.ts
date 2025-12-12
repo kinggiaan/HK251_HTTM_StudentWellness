@@ -11,8 +11,11 @@ export interface Student {
   cgpa?: number;
   validated?: boolean;
   city?: string;
+  profession?: string;
   academic_pressure?: number;
+  work_pressure?: number;
   study_satisfaction?: number;
+  job_satisfaction?: number;
   sleep_duration?: string;
   dietary_habits?: string;
   degree?: string; // First year, Second year, etc.

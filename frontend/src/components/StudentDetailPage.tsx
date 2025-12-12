@@ -256,41 +256,27 @@ export function StudentDetailPage({ student, mentalHealth, onBack }: StudentDeta
             {/* Lifestyle & Wellness Factors */}
             <div className="grid grid-cols-2 gap-6 mb-6">
               <InfoCard title="Sleep & Physical Health">
-                <InfoRow label="Sleep Hours" value={`${mentalHealth.sleepHours}h`} />
+                <InfoRow label="Sleep Duration" value={mentalHealth.sleepHours} />
                 <InfoRow label="Sleep Quality" value={mentalHealth.sleepQuality} />
                 <InfoRow label="Physical Activity" value={mentalHealth.physicalActivity} />
                 <InfoRow label="Diet Quality" value={mentalHealth.dietQuality} />
               </InfoCard>
 
-              <InfoCard title="Social & Environmental Factors">
-                <InfoRow label="Social Support" value={`${mentalHealth.socialSupport}/5`} />
+              <InfoCard title="Environmental Factors">
                 <InfoRow label="Financial Stress" value={`${mentalHealth.financialStress}/5`} />
-                <InfoRow label="Semester Credit Load" value={`${mentalHealth.semesterCreditLoad} credits`} />
-                <InfoRow label="Substance Use" value={mentalHealth.substanceUse} />
               </InfoCard>
             </div>
 
             {/* Medical History */}
             <div className="mb-6">
               <InfoCard title="Medical History">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="bg-[#f4f6f7] rounded p-4">
-                    <p className="font-['Poppins:Regular',sans-serif] text-[9.863px] text-[#495d72] mb-2">
-                      Family History of Mental Health Issues
-                    </p>
-                    <p className={`font-['Poppins:SemiBold',sans-serif] text-[13.151px] ${mentalHealth.familyHistory === 'Yes' ? 'text-[#ed6a5e]' : 'text-green-600'}`}>
-                      {mentalHealth.familyHistory}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-[#f4f6f7] rounded p-4">
-                    <p className="font-['Poppins:Regular',sans-serif] text-[9.863px] text-[#495d72] mb-2">
-                      Chronic Illness
-                    </p>
-                    <p className={`font-['Poppins:SemiBold',sans-serif] text-[13.151px] ${mentalHealth.chronicIllness === 'Yes' ? 'text-[#ed6a5e]' : 'text-green-600'}`}>
-                      {mentalHealth.chronicIllness}
-                    </p>
-                  </div>
+                <div className="bg-[#f4f6f7] rounded p-4">
+                  <p className="font-['Poppins:Regular',sans-serif] text-[9.863px] text-[#495d72] mb-2">
+                    Family History of Mental Health Issues
+                  </p>
+                  <p className={`font-['Poppins:SemiBold',sans-serif] text-[13.151px] ${mentalHealth.familyHistory === 'Yes' ? 'text-[#ed6a5e]' : 'text-green-600'}`}>
+                    {mentalHealth.familyHistory}
+                  </p>
                 </div>
               </InfoCard>
             </div>

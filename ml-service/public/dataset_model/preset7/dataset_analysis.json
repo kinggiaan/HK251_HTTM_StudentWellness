@@ -1,0 +1,430 @@
+{
+  "dataset_path": "public\\dataset_model\\preset7\\dataset.csv",
+  "config": {
+    "status": "loaded",
+    "data": {
+      "features": [],
+      "test_size": 0.2,
+      "n_estimators": 100,
+      "class_weight": "balanced"
+    }
+  },
+  "null_counts": {
+    "id": 0,
+    "Gender": 0,
+    "Age": 0,
+    "City": 0,
+    "Profession": 0,
+    "Academic Pressure": 0,
+    "Work Pressure": 0,
+    "CGPA": 0,
+    "Study Satisfaction": 0,
+    "Job Satisfaction": 0,
+    "Sleep Duration": 0,
+    "Dietary Habits": 0,
+    "Degree": 0,
+    "Have you ever had suicidal thoughts ?": 0,
+    "Work/Study Hours": 0,
+    "Financial Stress": 0,
+    "Family History of Mental Illness": 0,
+    "Depression": 0
+  },
+  "null_percent": {
+    "id": 0.0,
+    "Gender": 0.0,
+    "Age": 0.0,
+    "City": 0.0,
+    "Profession": 0.0,
+    "Academic Pressure": 0.0,
+    "Work Pressure": 0.0,
+    "CGPA": 0.0,
+    "Study Satisfaction": 0.0,
+    "Job Satisfaction": 0.0,
+    "Sleep Duration": 0.0,
+    "Dietary Habits": 0.0,
+    "Degree": 0.0,
+    "Have you ever had suicidal thoughts ?": 0.0,
+    "Work/Study Hours": 0.0,
+    "Financial Stress": 0.0,
+    "Family History of Mental Illness": 0.0,
+    "Depression": 0.0
+  },
+  "splits": {
+    "train": 17829,
+    "validation": 4458,
+    "test": 5572
+  },
+  "column_analysis": [
+    {
+      "column": "gender",
+      "original_name": "Gender",
+      "dtype": "object",
+      "nulls": 0,
+      "unique": 2,
+      "type": "categorical",
+      "top_categories": {
+        "Male": 9949,
+        "Female": 7880
+      }
+    },
+    {
+      "column": "age",
+      "original_name": "Age",
+      "dtype": "float64",
+      "nulls": 0,
+      "unique": 33,
+      "type": "numeric",
+      "describe": {
+        "count": 17829.0,
+        "mean": 25.841998990408886,
+        "std": 4.934765784443858,
+        "min": 18.0,
+        "25%": 21.0,
+        "50%": 26.0,
+        "75%": 30.0,
+        "max": 59.0
+      }
+    },
+    {
+      "column": "academic_pressure",
+      "original_name": "Academic Pressure",
+      "dtype": "float64",
+      "nulls": 0,
+      "unique": 6,
+      "type": "numeric",
+      "describe": {
+        "count": 17829.0,
+        "mean": 3.14549329743676,
+        "std": 1.3770489330826863,
+        "min": 0.0,
+        "25%": 2.0,
+        "50%": 3.0,
+        "75%": 4.0,
+        "max": 5.0
+      }
+    },
+    {
+      "column": "cgpa",
+      "original_name": "CGPA",
+      "dtype": "float64",
+      "nulls": 0,
+      "unique": 330,
+      "type": "numeric",
+      "describe": {
+        "count": 17829.0,
+        "mean": 7.663199422289528,
+        "std": 1.4644044318747675,
+        "min": 5.03,
+        "25%": 6.29,
+        "50%": 7.77,
+        "75%": 8.93,
+        "max": 10.0
+      }
+    },
+    {
+      "column": "study_satisfaction",
+      "original_name": "Study Satisfaction",
+      "dtype": "float64",
+      "nulls": 0,
+      "unique": 6,
+      "type": "numeric",
+      "describe": {
+        "count": 17829.0,
+        "mean": 2.9472208200123395,
+        "std": 1.3564208153424757,
+        "min": 0.0,
+        "25%": 2.0,
+        "50%": 3.0,
+        "75%": 4.0,
+        "max": 5.0
+      }
+    },
+    {
+      "column": "sleep_duration",
+      "original_name": "Sleep Duration",
+      "dtype": "object",
+      "nulls": 0,
+      "unique": 4,
+      "type": "categorical",
+      "top_categories": {
+        "'Less than 5 hours'": 5301,
+        "'7-8 hours'": 4716,
+        "'5-6 hours'": 3915,
+        "'More than 8 hours'": 3897
+      }
+    },
+    {
+      "column": "dietary_habits",
+      "original_name": "Dietary Habits",
+      "dtype": "object",
+      "nulls": 0,
+      "unique": 3,
+      "type": "categorical",
+      "top_categories": {
+        "Unhealthy": 6575,
+        "Moderate": 6396,
+        "Healthy": 4858
+      }
+    },
+    {
+      "column": "work_study_hours",
+      "original_name": "Work/Study Hours",
+      "dtype": "float64",
+      "nulls": 0,
+      "unique": 13,
+      "type": "numeric",
+      "describe": {
+        "count": 17829.0,
+        "mean": 7.155028324639632,
+        "std": 3.69762051168516,
+        "min": 0.0,
+        "25%": 4.0,
+        "50%": 8.0,
+        "75%": 10.0,
+        "max": 12.0
+      }
+    },
+    {
+      "column": "financial_stress",
+      "original_name": "Financial Stress",
+      "dtype": "float64",
+      "nulls": 0,
+      "unique": 5,
+      "type": "numeric",
+      "describe": {
+        "count": 17829.0,
+        "mean": 3.1475124796679568,
+        "std": 1.435589697584639,
+        "min": 1.0,
+        "25%": 2.0,
+        "50%": 3.0,
+        "75%": 4.0,
+        "max": 5.0
+      }
+    },
+    {
+      "column": "family_his_of_mental_illness",
+      "original_name": "Family History of Mental Illness",
+      "dtype": "object",
+      "nulls": 0,
+      "unique": 2,
+      "type": "categorical",
+      "top_categories": {
+        "No": 9197,
+        "Yes": 8632
+      }
+    },
+    {
+      "column": "depression_truth",
+      "original_name": "Depression",
+      "dtype": "int64",
+      "nulls": 0,
+      "unique": 2,
+      "type": "numeric",
+      "describe": {
+        "count": 17829.0,
+        "mean": 0.5867967917437882,
+        "std": 0.4924224987268954,
+        "min": 0.0,
+        "25%": 0.0,
+        "50%": 1.0,
+        "75%": 1.0,
+        "max": 1.0
+      }
+    }
+  ],
+  "feature_boxplots": [
+    {
+      "feature": "age",
+      "target": "depression_truth",
+      "type": "boxplot",
+      "labels": [
+        "0",
+        "1"
+      ],
+      "group_counts": [
+        {
+          "label": "0",
+          "count": 7367
+        },
+        {
+          "label": "1",
+          "count": 10462
+        }
+      ]
+    },
+    {
+      "feature": "cgpa",
+      "target": "depression_truth",
+      "type": "boxplot",
+      "labels": [
+        "0",
+        "1"
+      ],
+      "group_counts": [
+        {
+          "label": "0",
+          "count": 7367
+        },
+        {
+          "label": "1",
+          "count": 10462
+        }
+      ]
+    },
+    {
+      "feature": "work_study_hours",
+      "target": "depression_truth",
+      "type": "boxplot",
+      "labels": [
+        "0",
+        "1"
+      ],
+      "group_counts": [
+        {
+          "label": "0",
+          "count": 7367
+        },
+        {
+          "label": "1",
+          "count": 10462
+        }
+      ]
+    }
+  ],
+  "feature_proportions": [
+    {
+      "feature": "gender",
+      "target": "depression_truth",
+      "type": "count_bar",
+      "counts": {
+        "0": {
+          "Female": 3269,
+          "Male": 4098
+        },
+        "1": {
+          "Female": 4611,
+          "Male": 5851
+        }
+      }
+    },
+    {
+      "feature": "academic_pressure",
+      "target": "depression_truth",
+      "type": "count_bar",
+      "counts": {
+        "0": {
+          "0.0": 1,
+          "1.0": 2451,
+          "2.0": 1657,
+          "3.0": 1889,
+          "4.0": 791,
+          "5.0": 578
+        },
+        "1": {
+          "0.0": 0,
+          "1.0": 590,
+          "2.0": 1005,
+          "3.0": 2899,
+          "4.0": 2542,
+          "5.0": 3426
+        }
+      }
+    },
+    {
+      "feature": "study_satisfaction",
+      "target": "depression_truth",
+      "type": "count_bar",
+      "counts": {
+        "0": {
+          "0.0": 1,
+          "1.0": 1001,
+          "2.0": 1337,
+          "3.0": 1604,
+          "4.0": 1946,
+          "5.0": 1478
+        },
+        "1": {
+          "0.0": 1,
+          "1.0": 2433,
+          "2.0": 2428,
+          "3.0": 2143,
+          "4.0": 2118,
+          "5.0": 1339
+        }
+      }
+    },
+    {
+      "feature": "sleep_duration",
+      "target": "depression_truth",
+      "type": "count_bar",
+      "counts": {
+        "0": {
+          "'5-6 hours'": 1669,
+          "'7-8 hours'": 1905,
+          "'Less than 5 hours'": 1906,
+          "'More than 8 hours'": 1887
+        },
+        "1": {
+          "'5-6 hours'": 2246,
+          "'7-8 hours'": 2811,
+          "'Less than 5 hours'": 3395,
+          "'More than 8 hours'": 2010
+        }
+      }
+    },
+    {
+      "feature": "dietary_habits",
+      "target": "depression_truth",
+      "type": "count_bar",
+      "counts": {
+        "0": {
+          "Healthy": 2640,
+          "Moderate": 2788,
+          "Unhealthy": 1939
+        },
+        "1": {
+          "Healthy": 2218,
+          "Moderate": 3608,
+          "Unhealthy": 4636
+        }
+      }
+    },
+    {
+      "feature": "financial_stress",
+      "target": "depression_truth",
+      "type": "count_bar",
+      "counts": {
+        "0": {
+          "1.0": 2207,
+          "2.0": 1831,
+          "3.0": 1376,
+          "4.0": 1162,
+          "5.0": 791
+        },
+        "1": {
+          "1.0": 1041,
+          "2.0": 1360,
+          "3.0": 2012,
+          "4.0": 2525,
+          "5.0": 3524
+        }
+      }
+    },
+    {
+      "feature": "family_his_of_mental_illness",
+      "target": "depression_truth",
+      "type": "count_bar",
+      "counts": {
+        "0": {
+          "No": 4024,
+          "Yes": 3343
+        },
+        "1": {
+          "No": 5173,
+          "Yes": 5289
+        }
+      }
+    }
+  ]
+}

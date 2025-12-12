@@ -224,21 +224,13 @@ export function DatasetAnalysis({ presetName, className = '' }: DatasetAnalysisP
 
   if (error) {
     return (
-      <div className={`bg-white rounded-lg border border-red-200 p-6 ${className}`}>
-        <div className="flex items-center gap-3 text-red-600 mb-3">
-          <AlertCircle className="w-5 h-5 shrink-0" />
+      <div className={`bg-white rounded-lg border border-blue-200 p-6 ${className}`}>
+        <div className="flex items-center gap-3 text-blue-600 mb-3">
+          <div className="w-5 h-5 border-3 border-blue-600 border-t-transparent rounded-full animate-spin shrink-0"></div>
           <div>
-            <p className="font-medium">Error Loading Analysis</p>
-            <p className="text-sm text-red-500 mt-1">{error}</p>
+            <p className="font-medium">Model Training in Progress</p>
+            <p className="text-sm text-gray-600 mt-1">Analysis data will be available once training completes.</p>
           </div>
-        </div>
-        <div className="mt-4 p-4 bg-red-50 rounded-lg border border-red-200">
-          <p className="text-sm text-red-700 font-mono">
-            <strong>Debug Info:</strong><br/>
-            - Preset Name: {presetName}<br/>
-            - API Endpoint: /api/ml/presets/{presetName}/analysis<br/>
-            - Check browser console for detailed error
-          </p>
         </div>
       </div>
     );

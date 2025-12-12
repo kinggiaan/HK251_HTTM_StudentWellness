@@ -30,14 +30,20 @@ export function transformStudentToMentalHealthRecord(
     'has-depression': 'has-depression'
   };
 
+  // Clean sleep duration text - remove quotes only
+  const cleanSleepDuration = (duration?: string): string => {
+    if (!duration) return 'Not specified';
+    return duration.replace(/'/g, ''); // Remove single quotes from dataset
+  };
+
   // Map sleep quality from duration string to quality
   const getSleepQuality = (duration?: string): 'Poor' | 'Fair' | 'Good' | 'Excellent' => {
     if (!duration) return 'Fair';
-    const lower = duration.toLowerCase();
-    if (lower.includes('less than 5')) return 'Poor';
-    if (lower.includes('5-6')) return 'Fair';
-    if (lower.includes('7-8')) return 'Good';
-    if (lower.includes('more than 8')) return 'Excellent';
+    const cleaned = duration.replace(/'/g, '').toLowerCase();
+    if (cleaned.includes('less than 5')) return 'Poor';
+    if (cleaned.includes('5-6')) return 'Fair';
+    if (cleaned.includes('7-8')) return 'Good';
+    if (cleaned.includes('more than 8')) return 'Excellent';
     return 'Fair';
   };
 
@@ -53,7 +59,7 @@ export function transformStudentToMentalHealthRecord(
 
   // Use health record data if available, otherwise use student's own data
   const stressLevel = student.academic_pressure ?? healthRecord?.stressLevel ?? student.stressLevel ?? 3;
-  const sleepHours = student.sleepHours ?? healthRecord?.sleepHours ?? 7;
+  const sleepDuration = cleanSleepDuration(student.sleep_duration);
   
   // Calculate risk level from depression_predicting (ML prediction)
   // Simple 2-level system: depression_predicting = 1 → Has Depression, else → No Depression
@@ -74,13 +80,20 @@ export function transformStudentToMentalHealthRecord(
 
   // Parse student name
   const studentName = student.name || `${(student as any).firstName || ''} ${(student as any).lastName || ''}`.trim() || 'Unknown';
-  const course = student.major || student.department || student.degree || 'Unknown';
+  
+  // Use 'degree' field first (matches dataset), then fallback to major/department
+  const course = student.degree || student.major || student.department || 'Unknown';
   
   // Get age from student data or calculate from dateOfBirth
   let age = student.age ?? 20;
   if (!student.age && (student as any).dateOfBirth) {
     age = new Date().getFullYear() - new Date((student as any).dateOfBirth).getFullYear();
   }
+
+  // Calculate prediction text
+  const prediction = student.depression_predicting === 1 ? 'Has Depression' : 
+                    student.depression_predicting === 0 ? 'No Depression' : 
+                    'Not Predicted';
 
   return {
     id: healthRecord?.id || student.studentId || student.id,
@@ -89,22 +102,23 @@ export function transformStudentToMentalHealthRecord(
     course,
     stressLevel: Number(stressLevel),
     moodRating: student.study_satisfaction ?? 3,
-    sleepHours: Number(sleepHours),
-    counselingSessions: 0,
-    lastCheckIn: healthRecord?.assessmentDate || student.lastAssessment || student.updatedAt || new Date().toISOString(),
+    sleepHours: sleepDuration, // Display as text (e.g., "5-6 hours")
     riskLevel: riskLevelMap[riskLevel] || 'low',
-    notes: healthRecord?.notes || '',
     depressionScore: Number(depressionScore),
-    anxietyScore: Number(stressLevel), // Use academic pressure as proxy for anxiety
+    // anxietyScore removed - not in dataset
     sleepQuality: getSleepQuality(student.sleep_duration),
     physicalActivity: student.work_study_hours && student.work_study_hours > 6 ? 'Low' : 'Moderate',
     dietQuality: getDietQuality(student.dietary_habits),
-    socialSupport: 5 - Number(stressLevel), // Inverse relationship
-    substanceUse: 'Never',
     familyHistory: student.family_his_of_mental_illness || 'No',
-    chronicIllness: 'No',
     financialStress: Number(financialStress),
-    semesterCreditLoad: student.work_study_hours ?? 15
+    // New fields from dataset
+    prediction,
+    cgpa: student.cgpa,
+    workStudyHours: student.work_study_hours,
+    workPressure: student.work_pressure,
+    jobSatisfaction: student.job_satisfaction,
+    city: student.city,
+    profession: student.profession
   };
 }
 

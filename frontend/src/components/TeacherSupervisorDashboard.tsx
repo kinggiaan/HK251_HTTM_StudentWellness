@@ -168,7 +168,7 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
   const [notifications, setNotifications] = useState(teacherNotifications);
   const [isImporting, setIsImporting] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
-  const [activeTab, setActiveTab] = useState<"basic" | "mental" | "lifestyle" | "background" | "academic">("basic");
+  const [activeTab, setActiveTab] = useState<"basic" | "mental" | "lifestyle" | "background" | "academic" | "other">("basic");
 
   // Debounce search input
   useEffect(() => {
@@ -215,10 +215,13 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
         return;
       }
       const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-      const required = ["studentname","age","course"];
+      const required = ["studentname","age"];
+      // Accept either 'degree' or 'course' column
+      const hasDegreeOrCourse = headers.includes("degree") || headers.includes("course");
       const missing = required.filter(r => !headers.includes(r));
-      if (missing.length) {
-        toast.error(`Thiếu cột: ${missing.join(", ")}`);
+      if (missing.length || !hasDegreeOrCourse) {
+        const allMissing = [...missing, ...(!hasDegreeOrCourse ? ["degree or course"] : [])];
+        toast.error(`Thiếu cột: ${allMissing.join(", ")}`);
         return;
       }
       const rows = lines.slice(1).map((line) => {
@@ -265,8 +268,8 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
       studentName: record.studentName,
       studentId: record.id.toString().replace('-health', ''),
       age: record.age,
-      course: record.course,
-      riskLevel: record.riskLevel === "has-depression" ? "Có Depression" : "Không Depression",
+      course: record.degree || record.course, // Prefer 'degree' from dataset, fallback to 'course'
+      riskLevel: record.riskLevel === "has-depression" ? "Has Depression" : "No Depression",
       stressLevel: record.stressLevel,
       depressionScore: Math.floor(Math.random() * 5) + 1,
       anxietyScore: Math.floor(Math.random() * 5) + 1,
@@ -275,15 +278,14 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
       sleepHours: record.sleepHours || 7,
       physicalActivity: record.physicalActivity || "Moderate",
       dietQuality: "Balanced",
-      socialSupport: Math.floor(Math.random() * 5) + 1,
-      substanceUse: "None",
-      familyHistory: "No",
-      chronicIllness: "None",
-      financialStress: Math.floor(Math.random() * 5) + 1,
-      semesterCreditLoad: 15,
-      counselingSessions: Math.floor(Math.random() * 5),
-      lastCheckIn: record.lastCheckIn,
-      prediction: record.riskLevel === "has-depression" ? "Depression" : "Normal",
+      familyHistory: record.familyHistory || "No",
+      financialStress: record.financialStress || 0,
+      cgpa: record.cgpa || actualStudent?.cgpa,
+      workStudyHours: record.workStudyHours || actualStudent?.work_study_hours,
+      city: record.city || actualStudent?.city,
+      workPressure: record.workPressure || actualStudent?.work_pressure,
+      jobSatisfaction: record.jobSatisfaction || actualStudent?.job_satisfaction,
+      prediction: record.prediction || (record.riskLevel === "has-depression" ? "Has Depression" : "No Depression"),
       validated: actualStudent?.validated || false
     };
   });
@@ -375,7 +377,7 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                     setCurrentPage(1);
                   }}
                   placeholder="Search......"
-                  aria-label="Search students by name or course"
+                  aria-label="Search students by name or degree"
                   className="flex-1 bg-transparent border-none text-[11.507px] font-['Poppins:Medium',sans-serif] text-[#495d72] placeholder:text-[rgba(73,93,114,0.6)] focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
                 />
                 <div className="relative shrink-0 size-[16px]">
@@ -506,6 +508,16 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                 >
                   📚 Academic
                 </button>
+                <button
+                  onClick={() => setActiveTab("other")}
+                  className={`px-4 py-2 text-sm font-['Poppins:Medium',sans-serif] border-b-2 transition-colors ${
+                    activeTab === "other"
+                      ? "border-purple-500 text-purple-600 bg-purple-50"
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  📊 Other
+                </button>
               </div>
 
               {/* Table with Tab-based Content */}
@@ -517,8 +529,9 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                         <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
                         <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student ID</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Age</th>
-                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Course</th>
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Degree</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Risk Level</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Prediction</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Validated</th>
                       </tr>
                     </thead>
@@ -530,11 +543,24 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                           <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.age}</td>
                           <td className="py-[12px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.course}</td>
                           <td className="py-[12px] px-[12px] text-center">
-                            <span className={`font-['Poppins:Bold',sans-serif] text-[12px] px-[12px] py-[4px] rounded-full inline-flex items-center gap-1 ${
-                              student.riskLevel === "Có Depression" ? "bg-red-100 text-red-700 border border-red-300" :
-                              "bg-green-100 text-green-700 border border-green-300"
+                            <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full inline-flex items-center gap-1 ${
+                              student.riskLevel === "Has Depression" ? "bg-red-100 text-red-700 border-2 border-red-400" :
+                              "bg-green-100 text-green-700 border-2 border-green-400"
                             }`}>
-                              {student.riskLevel}
+                              {student.riskLevel === "Has Depression" ? "⚠️" : "✅"} {student.riskLevel}
+                            </span>
+                          </td>
+                          <td className="py-[12px] px-[12px] text-center">
+                            <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full inline-flex items-center gap-1 ${
+                              student.prediction === 'Has Depression' 
+                                ? "bg-red-100 text-red-700 border-2 border-red-400" 
+                                : student.prediction === 'No Depression'
+                                ? "bg-green-100 text-green-700 border-2 border-green-400"
+                                : "bg-gray-100 text-gray-600 border-2 border-gray-300"
+                            }`}>
+                              {student.prediction === 'Has Depression' && "⚠️"}
+                              {student.prediction === 'No Depression' && "✅"}
+                              {student.prediction || 'N/A'}
                             </span>
                           </td>
                           <td className="py-[12px] px-[12px] text-center">
@@ -561,10 +587,8 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                     <thead>
                       <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
                         <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
-                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Stress Level</th>
-                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Depression</th>
-                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Anxiety</th>
-                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Mood Rating</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Academic Pressure</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Study Satisfaction</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Sleep Quality</th>
                       </tr>
                     </thead>
@@ -581,8 +605,6 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                               {student.stressLevel}/5
                             </span>
                           </td>
-                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.depressionScore}/5</td>
-                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.anxietyScore}/5</td>
                           <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.moodRating}/5</td>
                           <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.sleepQuality}</td>
                         </tr>
@@ -608,11 +630,9 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                       {paginatedStudents.map((student, idx) => (
                         <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
                           <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
-                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.sleepHours}h</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.sleepHours}</td>
                           <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.physicalActivity}</td>
                           <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.dietQuality}</td>
-                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.socialSupport}/5</td>
-                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.substanceUse}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -626,7 +646,6 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                       <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
                         <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Family History</th>
-                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Chronic Illness</th>
                         <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Financial Stress</th>
                       </tr>
                     </thead>
@@ -635,7 +654,6 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                         <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
                           <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
                           <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.familyHistory}</td>
-                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.chronicIllness}</td>
                           <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.financialStress}/5</td>
                         </tr>
                       ))}
@@ -649,24 +667,40 @@ export function TeacherSupervisorDashboard({ mentalHealthRecords = [], onLogout 
                     <thead>
                       <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
                         <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
-                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Credit Load</th>
-                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Counseling Sessions</th>
-                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Last Check-In</th>
-                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Prediction</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">CGPA</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Work/Study Hours</th>
                       </tr>
                     </thead>
                     <tbody>
                       {paginatedStudents.map((student, idx) => (
                         <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
                           <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
-                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.semesterCreditLoad}</td>
-                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.counselingSessions}</td>
-                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.lastCheckIn}</td>
-                          <td className="py-[12px] px-[12px] text-center">
-                            <span className="font-['Poppins:Medium',sans-serif] text-[12px] px-[12px] py-[4px] rounded-full bg-blue-100 text-blue-700 border border-blue-300">
-                              {student.prediction}
-                            </span>
-                          </td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.cgpa?.toFixed(2) || 'N/A'}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.workStudyHours != null ? `${student.workStudyHours}h/day` : 'N/A'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* Other Tab */}
+                {activeTab === "other" && (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
+                        <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Work Pressure</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Job Satisfaction</th>
+                        <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">City</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedStudents.map((student, idx) => (
+                        <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
+                          <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.workPressure || 0}/5</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.jobSatisfaction || 0}/5</td>
+                          <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.city || 'N/A'}</td>
                         </tr>
                       ))}
                     </tbody>

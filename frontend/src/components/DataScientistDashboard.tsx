@@ -10,6 +10,7 @@ import { extendedMockStudents } from "../data/mockStudentsExtended";
 import { MentalHealthRecord, mockMentalHealthRecords } from "../data/mockMentalHealth";
 import { useStudents } from "../hooks/useStudents";
 import { transformStudentsToMentalHealthRecords } from "../utils/dataTransform";
+import { parseSleepHours } from "../utils/parseSleepHours";
 import type { Student } from "../services/students.service";
 import { dataScientistNotifications } from "../data/mockNotificationsByRole";
 import { DatasetManagement } from "./DatasetManagementSection";
@@ -278,7 +279,7 @@ interface AnalyticsDashboardProps {
 function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState<"basic" | "mental" | "lifestyle" | "background" | "academic">("basic");
+  const [activeTab, setActiveTab] = useState<"basic" | "mental" | "lifestyle" | "background" | "academic" | "other">("basic");
   const studentsPerPage = 5;
   
   // Fix: Load ALL students by requesting a large limit (API handles pagination)
@@ -322,7 +323,10 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
     ? (mentalHealthRecords.reduce((sum: number, r: MentalHealthRecord) => sum + r.stressLevel, 0) / totalStudents).toFixed(1)
     : "0.0";
   const avgSleep = totalStudents > 0
-    ? (mentalHealthRecords.reduce((sum: number, r: MentalHealthRecord) => sum + r.sleepHours, 0) / totalStudents).toFixed(1)
+    ? (mentalHealthRecords.reduce((sum: number, r: MentalHealthRecord) => {
+        const numericHours = parseSleepHours(r.sleepHours);
+        return sum + numericHours;
+      }, 0) / totalStudents).toFixed(1)
     : "0.0";
 
   // Student data for table - with all fields
@@ -372,23 +376,21 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
       stressLevel: mentalHealth?.stressLevel || 0,
       moodRating: mentalHealth?.moodRating || 3,
       sleepHours: mentalHealth?.sleepHours || 7,
-      counselingSessions: mentalHealth?.counselingSessions || 0,
-      riskLevel: mentalHealth?.riskLevel === "has-depression" ? "Có Depression" : "Không Depression",
+      riskLevel: mentalHealth?.riskLevel === "has-depression" ? "Has Depression" : "No Depression",
       depressionScore: mentalHealth?.depressionScore || 0,
-      anxietyScore: mentalHealth?.anxietyScore || 0,
+      anxietyScore: 0,
       sleepQuality: mentalHealth?.sleepQuality || "Good",
       physicalActivity: mentalHealth?.physicalActivity || "Moderate",
       dietQuality: mentalHealth?.dietQuality || "Good",
-      socialSupport: mentalHealth?.socialSupport || 3,
-      substanceUse: mentalHealth?.substanceUse || "Never",
       familyHistory: mentalHealth?.familyHistory || "No",
-      chronicIllness: mentalHealth?.chronicIllness || "No",
-      financialStress: mentalHealth?.financialStress || 2,
-      semesterCreditLoad: mentalHealth?.semesterCreditLoad || 15,
-      lastCheckIn: mentalHealth?.lastCheckIn || "N/A",
-      notes: mentalHealth?.notes || "No notes available",
-      prediction: mentalHealth?.riskLevel === "has-depression" ? "Depression" : "Normal",
-      validated: student.validated || false, // Add validated status
+      financialStress: mentalHealth?.financialStress || 0,
+      cgpa: mentalHealth?.cgpa || student.cgpa,
+      workStudyHours: mentalHealth?.workStudyHours || student.work_study_hours,
+      city: mentalHealth?.city || student.city,
+      workPressure: mentalHealth?.workPressure || student.work_pressure,
+      jobSatisfaction: mentalHealth?.jobSatisfaction || student.job_satisfaction,
+      prediction: mentalHealth?.prediction || (mentalHealth?.riskLevel === "has-depression" ? "Has Depression" : "No Depression"),
+      validated: student.validated || false,
       depressionTruth: student.depression_truth,
       depressionPredicting: student.depression_predicting
     };
@@ -490,8 +492,8 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
           
           <div className="grid grid-cols-2 gap-[16px] mt-[8px]">
             <div className="bg-[#f4f6f7] rounded-[8px] p-[16px]">
-              <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px] mb-[4px]">Avg Stress Level</p>
-              <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[24px]">{avgStress}/10</p>
+              <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px] mb-[4px]">Avg Academic Pressure</p>
+              <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[24px]">{avgStress}/5</p>
             </div>
             
             <div className="bg-[#f4f6f7] rounded-[8px] p-[16px]">
@@ -501,21 +503,25 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
 
             <div className="bg-[#f4f6f7] rounded-[8px] p-[16px]">
               <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px] mb-[4px]">Features Used</p>
-              <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[24px]">8</p>
+              <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[24px]">
+                10
+              </p>
             </div>
 
             <div className="bg-[#f4f6f7] rounded-[8px] p-[16px]">
-              <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px] mb-[4px]">Model Version</p>
-              <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[24px]">v2.1</p>
+              <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px] mb-[4px]">Accuracy</p>
+              <p className="font-['Poppins:Bold',sans-serif] text-[#0c1e33] text-[24px]">
+                {performance?.accuracy ? `${(performance.accuracy * 100).toFixed(1)}%` : 'N/A'}
+              </p>
             </div>
           </div>
 
           <div className="mt-[8px] bg-[#e8f4fd] rounded-[8px] p-[12px] border border-[#4c85e9]/20">
             <p className="font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[11px]">
-              <span className="font-['Poppins:Bold',sans-serif]">Last Training:</span> Nov 1, 2025 14:30
+              <span className="font-['Poppins:Bold',sans-serif]">Last Training:</span> {latestTrained ? new Date(latestTrained.last_trained || latestTrained.created_at).toLocaleString() : 'Not trained yet'}
             </p>
             <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[10px] mt-[4px]">
-              Training Time: 2.4 minutes • Samples: {totalStudents}
+              Dataset: {latestTrained?.dataset_name || 'No dataset'} • Samples: {totalStudents}
             </p>
           </div>
         </div>
@@ -527,24 +533,33 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
         <div className="flex flex-col gap-[12px]">
           <p className="font-['Poppins:SemiBold',sans-serif] text-[#0c1e33] text-[16px]">Top Feature Importance</p>
           
-          <div className="grid grid-cols-4 gap-[16px] mt-[8px]">
-            {[
-              { name: 'Sleep Hours', value: 0.28, color: '#4c85e9' },
-              { name: 'Stress Level', value: 0.24, color: '#eb5757' },
-              { name: 'Study Hours', value: 0.18, color: '#f2994a' },
-              { name: 'Social Activity', value: 0.12, color: '#27ae60' },
-            ].map((feature, idx) => (
-              <div key={idx} className="bg-white rounded-[8px] p-[16px] flex flex-col">
-                <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px] mb-[8px]">{feature.name}</p>
-                <p className="font-['Poppins:Bold',sans-serif] text-[20px] mb-[8px]" style={{ color: feature.color }}>
-                  {(feature.value * 100).toFixed(0)}%
-                </p>
-                <div className="w-full h-[6px] bg-[#e5e5e5] rounded-full overflow-hidden">
-                  <div className="h-full transition-all" style={{ width: `${feature.value * 100}%`, backgroundColor: feature.color }}></div>
-                </div>
-              </div>
-            ))}
-          </div>
+          {performance?.feature_importance && Object.keys(performance.feature_importance).length > 0 ? (
+            <div className="grid grid-cols-4 gap-[16px] mt-[8px]">
+              {Object.entries(performance.feature_importance)
+                .sort(([, a], [, b]) => b - a) // Sort by importance descending
+                .slice(0, 4) // Top 4 features for the grid
+                .map(([featureName, importance], idx) => {
+                  const colors = ['#4c85e9', '#eb5757', '#f2994a', '#27ae60'];
+                  const color = colors[idx] || '#4c85e9';
+                  return (
+                    <div key={featureName} className="bg-white rounded-[8px] p-[16px] flex flex-col">
+                      <p className="font-['Poppins:Medium',sans-serif] text-[#495d72] text-[11px] mb-[8px]">{featureName}</p>
+                      <p className="font-['Poppins:Bold',sans-serif] text-[20px] mb-[8px]" style={{ color }}>
+                        {(importance * 100).toFixed(0)}%
+                      </p>
+                      <div className="w-full h-[6px] bg-[#e5e5e5] rounded-full overflow-hidden">
+                        <div className="h-full transition-all" style={{ width: `${importance * 100}%`, backgroundColor: color }}></div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-30" aria-hidden="true" />
+              <p className="text-sm">Train a model first to see feature importance</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -636,6 +651,16 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
             >
               📚 Academic
             </button>
+            <button
+              onClick={() => setActiveTab("other")}
+              className={`px-4 py-2 text-sm font-['Poppins:Medium',sans-serif] border-b-2 transition-colors ${
+                activeTab === "other"
+                  ? "border-purple-500 text-purple-600 bg-purple-50"
+                  : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              📋 Other
+            </button>
           </div>
 
           {/* Table with Tab-based Content */}
@@ -647,8 +672,9 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
                     <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
                     <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student ID</th>
                     <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Age</th>
-                    <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Course</th>
+                    <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Degree</th>
                     <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Risk Level</th>
+                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Prediction</th>
                     <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Validated</th>
                   </tr>
                 </thead>
@@ -660,21 +686,34 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
                       <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.age}</td>
                       <td className="py-[12px] px-[12px] font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.course}</td>
                       <td className="py-[12px] px-[12px] text-center">
-                        <span className={`font-['Poppins:Bold',sans-serif] text-[12px] px-[12px] py-[4px] rounded-full flex items-center gap-1 ${
-                          student.riskLevel === "Có Depression" ? "bg-red-100 text-red-700 border border-red-300" :
-                          "bg-green-100 text-green-700 border border-green-300"
+                        <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full inline-flex items-center gap-1 ${
+                          student.riskLevel === "Has Depression" ? "bg-red-100 text-red-700 border-2 border-red-400" :
+                          "bg-green-100 text-green-700 border-2 border-green-400"
                         }`}>
-                          {student.riskLevel === "Có Depression" ? (
+                          {student.riskLevel === "Has Depression" ? (
                             <>
                               <AlertCircle className="w-3 h-3" aria-hidden="true" />
-                              <span>Có Depression</span>
+                              <span>⚠️ Has Depression</span>
                             </>
                           ) : (
                             <>
                               <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
-                              <span>Không Depression</span>
+                              <span>✅ No Depression</span>
                             </>
                           )}
+                        </span>
+                      </td>
+                      <td className="py-[12px] px-[12px] text-center">
+                        <span className={`font-['Poppins:Bold',sans-serif] text-[13px] px-[14px] py-[5px] rounded-full inline-flex items-center gap-1 ${
+                          student.prediction === 'Has Depression' 
+                            ? "bg-red-100 text-red-700 border-2 border-red-400" 
+                            : student.prediction === 'No Depression'
+                            ? "bg-green-100 text-green-700 border-2 border-green-400"
+                            : "bg-gray-100 text-gray-600 border-2 border-gray-300"
+                        }`}>
+                          {student.prediction === 'Has Depression' && "⚠️"}
+                          {student.prediction === 'No Depression' && "✅"}
+                          {student.prediction || 'N/A'}
                         </span>
                       </td>
                       <td className="py-[12px] px-[12px] text-center">
@@ -701,10 +740,8 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
                 <thead>
                   <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
                     <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
-                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Stress Level</th>
-                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Depression</th>
-                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Anxiety</th>
-                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Mood Rating</th>
+                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Academic Pressure</th>
+                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Study Satisfaction</th>
                     <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Sleep Quality</th>
                   </tr>
                 </thead>
@@ -721,8 +758,6 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
                           {student.stressLevel}/5
                         </span>
                       </td>
-                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.depressionScore}/5</td>
-                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.anxietyScore}/5</td>
                       <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.moodRating}/5</td>
                       <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.sleepQuality}</td>
                     </tr>
@@ -737,22 +772,18 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
                 <thead>
                   <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
                     <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
-                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Sleep Hours</th>
+                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Sleep Duration</th>
                     <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Physical Activity</th>
                     <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Diet Quality</th>
-                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Social Support</th>
-                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Substance Use</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedStudents.map((student, idx) => (
                     <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
                       <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
-                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.sleepHours}h</td>
+                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.sleepHours}</td>
                       <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.physicalActivity}</td>
                       <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.dietQuality}</td>
-                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.socialSupport}/5</td>
-                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.substanceUse}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -766,7 +797,6 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
                   <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
                     <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
                     <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Family History</th>
-                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Chronic Illness</th>
                     <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Financial Stress</th>
                   </tr>
                 </thead>
@@ -775,7 +805,6 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
                     <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
                       <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
                       <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.familyHistory}</td>
-                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.chronicIllness}</td>
                       <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.financialStress}/5</td>
                     </tr>
                   ))}
@@ -789,24 +818,40 @@ function AnalyticsDashboard({ latestTrained }: AnalyticsDashboardProps) {
                 <thead>
                   <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
                     <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
-                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Credit Load</th>
-                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Counseling Sessions</th>
-                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Last Check-In</th>
-                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Prediction</th>
+                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">CGPA</th>
+                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Work/Study Hours</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedStudents.map((student, idx) => (
                     <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
                       <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
-                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.semesterCreditLoad}</td>
-                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.counselingSessions}</td>
-                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.lastCheckIn}</td>
-                      <td className="py-[12px] px-[12px] text-center">
-                        <span className="font-['Poppins:Medium',sans-serif] text-[12px] px-[12px] py-[4px] rounded-full bg-blue-100 text-blue-700 border border-blue-300">
-                          {student.prediction}
-                        </span>
-                      </td>
+                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.cgpa?.toFixed(2) || 'N/A'}</td>
+                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.workStudyHours != null ? `${student.workStudyHours}h/day` : 'N/A'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {/* Other Tab */}
+            {activeTab === "other" && (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[#e5e5e5] bg-[#f9fafb]">
+                    <th className="text-left py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Student Name</th>
+                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Work Pressure</th>
+                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">Job Satisfaction</th>
+                    <th className="text-center py-[12px] px-[12px] font-['Poppins:SemiBold',sans-serif] text-[#495d72] text-[12px]">City</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedStudents.map((student, idx) => (
+                    <tr key={student.studentId} className={idx % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
+                      <td className="py-[12px] px-[12px] font-['Poppins:Medium',sans-serif] text-[#0c1e33] text-[13px]">{student.studentName}</td>
+                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.workPressure || 0}/5</td>
+                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#0c1e33] text-[12px]">{student.jobSatisfaction || 0}/5</td>
+                      <td className="py-[12px] px-[12px] text-center font-['Poppins:Regular',sans-serif] text-[#495d72] text-[12px]">{student.city || 'N/A'}</td>
                     </tr>
                   ))}
                 </tbody>

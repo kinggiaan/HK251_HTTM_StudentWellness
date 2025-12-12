@@ -1,5 +1,5 @@
 {
   "state": "not-trained",
   "accuracy": 0.789124192390524,
-  "deployed": true
+  "deployed": false
 }

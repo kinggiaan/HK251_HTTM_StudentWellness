@@ -1,4 +1,5 @@
 {
   "state": "done",
-  "accuracy": 0.7876884422110553
+  "accuracy": 0.7876884422110553,
+  "deployed": true
 }

@@ -3,25 +3,26 @@ export interface MentalHealthRecord {
   studentName: string;
   age: number;
   course: string;
-  stressLevel: number; // 0-5
-  moodRating: number; // 1-5
-  sleepHours: number;
-  counselingSessions: number;
-  lastCheckIn: string;
+  stressLevel: number; // 0-5 (Academic Pressure)
+  moodRating: number; // 1-5 (Study Satisfaction)
+  sleepHours: string; // Changed to string for text display (e.g., "5-6 hours")
   riskLevel: "no-depression" | "has-depression";
-  notes: string;
-  // Extended mental health metrics
-  depressionScore: number; // 0-5
-  anxietyScore: number; // 0-5
+  // Extended mental health metrics from dataset
+  depressionScore: number; // 0-5 (Depression)
+  // anxietyScore removed - not in dataset
   sleepQuality: "Poor" | "Fair" | "Good" | "Excellent";
   physicalActivity: "Low" | "Moderate" | "High";
   dietQuality: "Poor" | "Fair" | "Good" | "Excellent";
-  socialSupport: number; // 0-5
-  substanceUse: "Never" | "Occasionally" | "Frequently";
   familyHistory: "Yes" | "No";
-  chronicIllness: "Yes" | "No";
   financialStress: number; // 0-5
-  semesterCreditLoad: number; // 15-30
+  // New fields from dataset
+  prediction?: string; // ML prediction result
+  cgpa?: number; // 0-10 scale
+  workStudyHours?: number; // Hours per day
+  workPressure?: number; // 0-5 scale
+  jobSatisfaction?: number; // 0-5 scale
+  city?: string;
+  profession?: string;
 }
 
 export interface WellnessActivity {
