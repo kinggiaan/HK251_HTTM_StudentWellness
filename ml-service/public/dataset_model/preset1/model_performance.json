@@ -1,21 +1,21 @@
 {
   "test_metrics": {
     "depression_truth": {
-      "acc": 0.7876884422110553,
-      "precision": 0.783027950291747,
-      "recall": 0.7782109461710314,
-      "f1": 0.7801920566268032
+      "acc": 0.7928930366116296,
+      "precision": 0.7871646909416619,
+      "recall": 0.7891483047550696,
+      "f1": 0.7880532213162144
     }
   },
   "confusion_matrices": {
     "depression_truth": [
       [
-        1680,
-        654
+        1788,
+        546
       ],
       [
-        529,
-        2709
+        608,
+        2630
       ]
     ]
   },
@@ -31,46 +31,46 @@
       "top_k": [
         {
           "name": "cat__Sleep Duration_0.0",
-          "importance": 0.13449977568416327
+          "importance": 0.14556976222521312
         },
         {
           "name": "cat__Dietary Habits_2.0",
-          "importance": 0.05241139524450422
+          "importance": 0.05739120681920147
         },
         {
           "name": "cat__Gender_1.0",
-          "importance": 0.023665320771646438
+          "importance": 0.024394347240915232
         },
         {
           "name": "cat__Dietary Habits_0.0",
-          "importance": 0.015836698070883764
+          "importance": 0.015118887393450003
         },
         {
           "name": "cat__Dietary Habits_1.0",
-          "importance": 0.011440107671601585
+          "importance": 0.011428891879766733
         },
         {
           "name": "cat__Sleep Duration_2.0",
-          "importance": 0.009443696724988748
-        },
-        {
-          "name": "cat__Sleep Duration_3.0",
-          "importance": 0.0038358008075369764
-        },
-        {
-          "name": "cat__Gender_0.0",
-          "importance": 0.0012786002691789699
-        },
-        {
-          "name": "cat__Sleep Duration_1.0",
-          "importance": -0.0004262000897263862
+          "importance": 0.008770749214894602
         },
         {
           "name": "cat__Family History of Mental Illness_0.0",
-          "importance": -0.001962763571108145
+          "importance": 0.0006280843427546257
+        },
+        {
+          "name": "cat__Sleep Duration_3.0",
+          "importance": 0.00032525796321222213
+        },
+        {
+          "name": "cat__Gender_0.0",
+          "importance": -0.0012000897263346633
+        },
+        {
+          "name": "cat__Sleep Duration_1.0",
+          "importance": -0.0015926424405562855
         }
       ]
     }
   ],
-  "model_path": "public/dataset_model/preset1/model.pkl"
+  "model_path": "public\\dataset_model\\preset1\\model.pkl"
 }

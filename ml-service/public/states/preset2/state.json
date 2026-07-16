@@ -1,3 +1,5 @@
 {
-  "state": "not-trained"
+  "state": "done",
+  "accuracy": 0.797559224694903,
+  "deployed": true
 }

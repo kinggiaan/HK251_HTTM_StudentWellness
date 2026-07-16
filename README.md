@@ -72,7 +72,7 @@ This method is suitable for local development or simple server testing.
     ```bash
     # Windows (Powershell)
     python -m venv venv
-    .\venv\Scripts\activate
+    .\venv\bin\Activate.ps1
 
     or
     .\venv\bin\Activate.ps1
@@ -152,11 +152,8 @@ npm run start
 Use a production server like Gunicorn (Linux/Mac):
 ```bash
 cd ml-service
-# Example (requires gunicorn installation):
-# gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app
+python main.py
 ```
-*On Windows, continuing to run `python main.py` is acceptable for simple usage, or use `waitress`.*
-
 ### Frontend
 Build static files for serving:
 ```bash

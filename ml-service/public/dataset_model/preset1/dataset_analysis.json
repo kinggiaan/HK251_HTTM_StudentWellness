@@ -1,5 +1,5 @@
 {
-  "dataset_path": "public/dataset_model/preset1/dataset.csv",
+  "dataset_path": "public\\dataset_model\\preset1\\dataset.csv",
   "config": {
     "status": "loaded",
     "data": {
