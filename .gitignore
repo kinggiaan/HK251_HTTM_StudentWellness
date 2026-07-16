@@ -155,3 +155,4 @@ Thumbs.db
 
 # ML Service
 ml-service/public/dataset_model/*/model.pkl
+.venv/*
